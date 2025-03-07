@@ -57,12 +57,10 @@ model User {
 model Verification {
   id        Int              @id @default(autoincrement())
   type      VerificationType @default(REGISTRATION)
-  isValid   Boolean          @default(true) @map("is_valid")
   expiresAt DateTime         @map("expires_at")
+  token     String
   createdAt DateTime         @default(now()) @map("created_at")
   updatedAt DateTime         @default(now()) @map("updated_at")
-  code      String
-  email     String
   userId    Int
   users     User             @relation(fields: [userId], references: [id])
 
