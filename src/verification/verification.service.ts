@@ -53,4 +53,27 @@ export class VerificationService {
 
     return otp;
   }
+
+  async validateOtp(userId: number, token: string): Promise<boolean> {
+    const validToken = await this.prismaService.verification.findFirst({
+      where: {
+        userId,
+        expiresAt: {
+          gt: new Date()
+        },
+        type: 'REGISTRATION'
+      },
+    });
+
+    if (validToken && (await bcrypt.compare(token, validToken.token))) {
+      await this.prismaService.verification.delete({
+        where: {
+          id: validToken.id,
+        }
+      });
+      return true;
+    } else {
+      return false;
+    }
+  }
 }
