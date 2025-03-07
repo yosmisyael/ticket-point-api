@@ -20,10 +20,6 @@ export class ErrorFilter implements ExceptionFilter {
       response.status(400).json({
         error: exception.message,
       });
-    } else if (exception instanceof Error) {
-      response.status(500).json({
-        error: exception.message,
-      });
     } else {
       response.status(500).json({
         error: 'An unknown error occurred.',
