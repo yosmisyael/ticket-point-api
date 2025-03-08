@@ -1,43 +1,33 @@
 import { Injectable } from '@nestjs/common';
-import { createTransport, SendMailOptions, Transporter } from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
-import { SendEmailDto } from './dto/mail.dto';
+import { MailDTO } from './dto/mail.dto';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class MailService {
-  private mailTransport: Transporter;
+  constructor(private configService: ConfigService, private readonly  mailerService: MailerService) {}
 
-  constructor(private configService: ConfigService) {
-    this.mailTransport = createTransport({
-      host: this.configService.get('MAIL_HOST'),
-      port: Number(this.configService.get('MAIL_PORT')),
-      secure: false,
-      auth: {
-        user: this.configService.get('MAIL_USER'),
-        pass: this.configService.get('MAIL_PASSWORD'),
-      },
-    });
-  }
-
-  async sendEmail(data: SendEmailDto): Promise<{ success: boolean } | null> {
-    const { sender, recipients, subject, html, text } = data;
-
-    const mailOptions: SendMailOptions = {
-      from:  sender ?? {
-        name: this.configService.get('MAIL_SENDER_NAME_DEFAULT') || '',
-        address: this.configService.get('MAIL_SENDER_DEFAULT') || '',
-      },
-      to: recipients,
-      subject,
-      html,
-      text,
-    };
+  async sendMail(data : MailDTO): Promise<{ success: boolean } | null> {
+    const { recipients, subject, html } = data;
 
     try {
-      await this.mailTransport.sendMail(mailOptions);
-      return { success: true };
+      await this.mailerService.sendMail({
+        to: recipients,
+        from: `"${this.configService.get('APP_NAME')}" <no-reply@ticketpoint.site>`,
+        subject,
+        html,
+      });
+
+      return {
+        success: true,
+      };
+
     } catch (error) {
-      return null;
+
+      return {
+        success: false,
+      };
+
     }
   }
 }
