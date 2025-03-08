@@ -1,4 +1,10 @@
-import { HttpException, Inject, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  HttpException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import {
   MailVerificationRequest, MailVerificationResponse,
   RegisterUserRequest,
@@ -11,6 +17,8 @@ import * as bcrypt from 'bcrypt';
 import { UserValidation } from './user.validation';
 import { VerificationService } from '../verification/verification.service';
 import { MailService } from '../mail/mail.service';
+import { LoginUserDto, UserResponseDto } from '../auth/dto/auth.dto';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UserService {
@@ -18,7 +26,8 @@ export class UserService {
     private validationService: ValidationService,
     private verificationService: VerificationService,
     private prismaService: PrismaService,
-    private mailSerivce: MailService
+    private mailService: MailService,
+    private jwtService: JwtService
   ) {}
 
   async verifyUniqueEmail(email: string, userId?: number): Promise<boolean> {
@@ -82,7 +91,7 @@ export class UserService {
 
     const otp = await this.verificationService.generateOtp(user.id);
 
-    await this.mailSerivce.sendMail({
+    await this.mailService.sendMail({
       subject: 'TicketPoint - Your OTP Code',
       recipients: [{ name: user.name ?? '', address: user.email }],
       html: `
@@ -144,7 +153,7 @@ export class UserService {
       }
     });
 
-    await this.mailSerivce.sendMail({
+    await this.mailService.sendMail({
       subject: 'TicketPoint - Welcome to TicketPoint',
       recipients: [{ name: user.name ?? '', address: user.email }],
       html: `
@@ -181,6 +190,32 @@ export class UserService {
 
     return {
       message: 'Email verified successfully.',
+    };
+  }
+
+  async login(loginUserDto: LoginUserDto): Promise<UserResponseDto> {
+    const { email, password } = this.validationService.validate(UserValidation.LOGIN, loginUserDto);
+
+    const user = await this.prismaService.user.findUnique(email);
+
+    if (!user) {
+      throw new UnauthorizedException('Email or password is wrong.');
+    }
+
+    const passwordValidation: boolean = await bcrypt.compare(password, user.password);
+
+    if (!passwordValidation) {
+      throw new HttpException('Email or password is wrong.', 401);
+    }
+
+    const payload = { email: user.email, sub: user.id };
+    const token: string = this.jwtService.sign(payload);
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      token,
     };
   }
 }
