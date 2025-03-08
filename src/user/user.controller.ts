@@ -7,6 +7,8 @@ import {
   UserResponse,
 } from 'src/model/user.model';
 import { WebResponse } from '../model/web.model';
+import { LoginUserDto } from '../auth/dto/auth.dto';
+import { UserResponseDto } from './dto/user.dto';
 
 @Controller('/api/users')
 export class UserController {
@@ -36,5 +38,17 @@ export class UserController {
     return {
       data: result,
     }
+  }
+
+  @Post('/login')
+  @HttpCode(200)
+  async login(
+    @Body() request: LoginUserDto,
+  ): Promise<WebResponse<UserResponseDto>> {
+    const result = await this.userService.login(request);
+
+    return {
+      data: result,
+    };
   }
 }
