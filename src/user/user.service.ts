@@ -5,11 +5,6 @@ import {
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import {
-  MailVerificationRequest, MailVerificationResponse,
-  RegisterUserRequest,
-  UserResponse,
-} from '../model/user.model';
 import { ValidationService } from '../common/validation.service';
 import { PrismaService } from '../common/prisma.service';
 import { Prisma } from '@prisma/client';
@@ -19,6 +14,7 @@ import { VerificationService } from '../verification/verification.service';
 import { MailService } from '../mail/mail.service';
 import { LoginUserDto, UserResponseDto } from '../auth/dto/auth.dto';
 import { JwtService } from '@nestjs/jwt';
+import { MailVerificationRequestDto, MailVerificationResponseDto, RegisterUserDto } from './dto/user.dto';
 
 @Injectable()
 export class UserService {
@@ -46,9 +42,9 @@ export class UserService {
     return countUsernames === 0;
   }
 
-  async register(request: RegisterUserRequest): Promise<UserResponse> {
+  async register(request: RegisterUserDto): Promise<UserResponseDto> {
     const registerRequest =
-      this.validationService.validate<RegisterUserRequest>(
+      this.validationService.validate<RegisterUserDto>(
         UserValidation.REGISTER,
         request,
       );
@@ -118,13 +114,13 @@ export class UserService {
     });
   }
 
-  async verifyEmail(request: MailVerificationRequest): Promise<MailVerificationResponse> {
+  async verifyEmail(request: MailVerificationRequestDto): Promise<MailVerificationResponseDto> {
     const invalidMessage = 'Invalid or expired OTP';
 
+    const { id } = request;
+
     const user = await this.prismaService.user.findFirst({
-      where: {
-        id: request.userId,
-      }
+      where: { id }
     });
 
     if (!user) {
