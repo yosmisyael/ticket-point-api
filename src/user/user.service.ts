@@ -144,6 +144,41 @@ export class UserService {
       }
     });
 
+    await this.mailSerivce.sendMail({
+      subject: 'TicketPoint - Welcome to TicketPoint',
+      recipients: [{ name: user.name ?? '', address: user.email }],
+      html: `
+          <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+              <!-- Header Section -->
+              <div style="background-color: #2196F3; color: #ffffff; text-align: center; padding: 20px;">
+                <img src="/" alt="Your App Logo" style="max-width: 150px; height: auto;">
+                <h1 style="margin: 10px 0 0; font-size: 24px;">Welcome to TicketPoint!</h1>
+              </div>
+          
+              <!-- Content Section -->
+              <div style="padding: 20px; text-align: center;">
+                <p style="font-size: 16px; color: #333333;">Hi there, ${user.name}</p>
+                <p style="font-size: 16px; color: #333333;">Thank you for validating your account. You're all set to explore TicketPoint and enjoy seamless ticket management.</p>
+                
+                <!-- Button Linking to Your App -->
+                <a href="" style="display: inline-block; margin: 20px 0; padding: 12px 24px; font-size: 16px; font-weight: bold; color: #ffffff; background-color: #FFC400; text-decoration: none; border-radius: 8px;">
+                  Go to TicketPoint
+                </a>
+          
+                <p style="font-size: 14px; color: #666666;">If you have any questions, feel free to reach out to our support team.</p>
+              </div>
+          
+              <!-- Footer Section -->
+              <div style="background-color: #f4f4f4; text-align: center; padding: 10px; font-size: 12px; color: #666666;">
+                <p style="margin: 0;">You're receiving this email because you signed up for TicketPoint.</p>
+                <p style="margin: 0;">&copy; 2025 TicketPoint. All rights reserved.</p>
+              </div>
+            </div>
+          </div>
+        `
+    });
+
     return {
       message: 'Email verified successfully.',
     };
