@@ -64,7 +64,7 @@ model Verification {
   userId    Int
   users     User             @relation(fields: [userId], references: [id])
 
-  @@map("validations")
+  @@map("verifications")
 }
 
 model Event {
