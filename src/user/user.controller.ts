@@ -1,14 +1,13 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { UserService } from './user.service';
-import {
-  MailVerificationRequest,
-  MailVerificationResponse,
-  RegisterUserRequest,
-  UserResponse,
-} from 'src/model/user.model';
 import { WebResponse } from '../model/web.model';
 import { LoginUserDto } from '../auth/dto/auth.dto';
-import { UserResponseDto } from './dto/user.dto';
+import {
+  MailVerificationRequestDto,
+  MailVerificationResponseDto,
+  RegisterUserDto,
+  UserResponseDto,
+} from './dto/user.dto';
 
 @Controller('/api/users')
 export class UserController {
@@ -17,8 +16,8 @@ export class UserController {
   @Post()
   @HttpCode(200)
   async register(
-    @Body() request: RegisterUserRequest,
-  ): Promise<WebResponse<UserResponse>> {
+    @Body() request: RegisterUserDto,
+  ): Promise<WebResponse<UserResponseDto>> {
     const result = await this.userService.register(request);
 
     await this.userService.generateEmailVerification(result.id);
@@ -31,8 +30,8 @@ export class UserController {
   @Post('/verify-email')
   @HttpCode(200)
   async verifyEmail(
-    @Body() request: MailVerificationRequest,
-  ): Promise<WebResponse<MailVerificationResponse>> {
+    @Body() request: MailVerificationRequestDto,
+  ): Promise<WebResponse<MailVerificationResponseDto>> {
     const result = await this.userService.verifyEmail(request);
 
     return {
