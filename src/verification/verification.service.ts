@@ -46,7 +46,7 @@ export class VerificationService {
       data: {
         userId: userId,
         type: 'REGISTRATION',
-        expiresAt: new Date(now.getTime() + this.maxExpirationMinutes),
+        expiresAt: new Date(now.getTime() + this.maxExpirationMinutes * 60 * 1000),
         token: hashedToken,
       }
     });
