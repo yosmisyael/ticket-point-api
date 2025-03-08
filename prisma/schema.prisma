@@ -67,6 +67,13 @@ model Verification {
   @@map("verifications")
 }
 
+model Authentication {
+  id    Int     @id @default(autoincrement())
+  token String
+
+  @@map("authentications")
+}
+
 model Event {
   id          Int        @id @default(autoincrement())
   title       String
