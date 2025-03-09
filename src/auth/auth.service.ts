@@ -3,6 +3,7 @@ import { AuthDto, AuthRequestDto } from './dto/auth.dto';
 import { PrismaService } from '../common/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { UserResponseDto } from '../user/dto/user.dto';
 
 @Injectable()
 export class AuthService {
@@ -11,7 +12,7 @@ export class AuthService {
     private readonly jwtService: JwtService
   ) {}
 
-  async validateUser({ email, password }: AuthRequestDto): Promise<string> {
+  async validateUser({ email, password }: AuthRequestDto): Promise<UserResponseDto> {
     const user = await this.prismaService.user.findUnique({
       where: { email },
     })
@@ -34,6 +35,11 @@ export class AuthService {
       data: { token }
     })
 
-    return token;
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      token: token,
+    };
   }
 }
