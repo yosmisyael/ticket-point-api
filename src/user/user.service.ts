@@ -2,7 +2,6 @@ import {
   HttpException,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { ValidationService } from '../common/validation.service';
@@ -12,9 +11,12 @@ import * as bcrypt from 'bcrypt';
 import { UserValidation } from './user.validation';
 import { VerificationService } from '../verification/verification.service';
 import { MailService } from '../mail/mail.service';
-import { LoginUserDto, UserResponseDto } from '../auth/dto/auth.dto';
-import { JwtService } from '@nestjs/jwt';
-import { MailVerificationRequestDto, MailVerificationResponseDto, RegisterUserDto } from './dto/user.dto';
+import {
+  MailVerificationRequestDto,
+  MailVerificationResponseDto,
+  RegisterUserDto,
+  UserResponseDto,
+} from './dto/user.dto';
 
 @Injectable()
 export class UserService {
@@ -23,7 +25,6 @@ export class UserService {
     private verificationService: VerificationService,
     private prismaService: PrismaService,
     private mailService: MailService,
-    private jwtService: JwtService
   ) {}
 
   async verifyUniqueEmail(email: string, userId?: number): Promise<boolean> {
@@ -186,32 +187,6 @@ export class UserService {
 
     return {
       message: 'Email verified successfully.',
-    };
-  }
-
-  async login(loginUserDto: LoginUserDto): Promise<UserResponseDto> {
-    const { email, password } = this.validationService.validate(UserValidation.LOGIN, loginUserDto);
-
-    const user = await this.prismaService.user.findUnique(email);
-
-    if (!user) {
-      throw new UnauthorizedException('Email or password is wrong.');
-    }
-
-    const passwordValidation: boolean = await bcrypt.compare(password, user.password);
-
-    if (!passwordValidation) {
-      throw new HttpException('Email or password is wrong.', 401);
-    }
-
-    const payload = { email: user.email, sub: user.id };
-    const token: string = this.jwtService.sign(payload);
-
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      token,
     };
   }
 }
