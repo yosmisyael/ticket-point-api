@@ -5,14 +5,14 @@ import {
   Post,
   UseGuards,
   Req,
-  Delete
+  Delete, Patch,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { WebResponse } from '../model/web.model';
 import {
   MailVerificationRequestDto,
   MailVerificationResponseDto,
-  RegisterUserDto,
+  RegisterUserDto, UpdateUserDto,
   UserResponseDto,
 } from './dto/user.dto';
 import { LocalGuard } from '../auth/guards/local.guard';
@@ -57,6 +57,19 @@ export class UserController {
     return {
       data: req.user as UserResponseDto,
     };
+  }
+
+  @Patch('/update')
+  @UseGuards(JwtGuard)
+  @HttpCode(200)
+  async update(@Req() req: Request): Promise<WebResponse<UserResponseDto>> {
+    const { id } = req.user as User;
+
+    const result: UserResponseDto = await this.userService.update(id, req.body)
+
+    return {
+      data: result,
+    }
   }
 
   @Delete('/logout')

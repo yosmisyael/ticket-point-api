@@ -15,7 +15,7 @@ import {
   MailVerificationRequestDto,
   MailVerificationResponseDto,
   RegisterUserDto,
-  UserResponseDto,
+  UserResponseDto, UpdateUserDto,
 } from './dto/user.dto';
 
 @Injectable()
@@ -71,7 +71,7 @@ export class UserService {
     };
   }
 
-  async generateEmailVerification(userId: number) {
+  async generateEmailVerification(userId: number): Promise<void> {
     const user = await this.prismaService.user.findFirst({
       where: {
         id: userId
@@ -190,7 +190,37 @@ export class UserService {
     };
   }
 
-  async deleteRefreshToken(id: number) {
+  async update(userId: number, request: UpdateUserDto): Promise<UserResponseDto> {
+    const updateRequest: UpdateUserDto =
+      this.validationService.validate<UpdateUserDto>(UserValidation.UPDATE, request);
+
+
+    if (updateRequest.email) {
+      const isAvailable: boolean = await this.verifyUniqueEmail(updateRequest.email);
+      if (!isAvailable) {
+        throw new HttpException('Email is already taken', 400);
+      }
+    }
+
+    if (updateRequest.password) {
+      updateRequest.password = await bcrypt.hash(updateRequest.password, 10);
+    }
+
+    const result = await this.prismaService.user.update({
+      where: {
+        id: userId,
+      },
+      data: updateRequest,
+    });
+
+    return {
+      id: userId,
+      email: result.email,
+      name: result.name,
+    };
+  }
+
+  async deleteRefreshToken(id: number): Promise<boolean> {
     const result = await this.prismaService.authentication.deleteMany({
       where: {
         userId: id,

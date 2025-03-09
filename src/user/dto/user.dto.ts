@@ -12,6 +12,13 @@ export class UserResponseDto {
   message?: string;
 }
 
+export class UpdateUserDto {
+  email?: string;
+  password?: string;
+  name?: string;
+  organizationId?: number;
+}
+
 export class MailVerificationRequestDto {
   id: number;
   token: string;
