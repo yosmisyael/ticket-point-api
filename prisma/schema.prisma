@@ -50,6 +50,7 @@ model User {
   organization   Organization?  @relation(fields: [organizationId], references: [id])
   verifications  Verification[]
   events         Event[]
+  auths          Authentication[]
 
   @@map("users")
 }
@@ -68,8 +69,10 @@ model Verification {
 }
 
 model Authentication {
-  id    Int     @id @default(autoincrement())
-  token String
+  id      Int     @id @default(autoincrement())
+  token   String
+  userId  Int     @map("user_id")
+  user    User    @relation(fields: [userId], references: [id])
 
   @@map("authentications")
 }
