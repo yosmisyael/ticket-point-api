@@ -189,4 +189,18 @@ export class UserService {
       message: 'Email verified successfully.',
     };
   }
+
+  async deleteRefreshToken(id: number) {
+    const result = await this.prismaService.authentication.deleteMany({
+      where: {
+        userId: id,
+      }
+    });
+
+    if (result.count == 0) {
+      throw new HttpException('An error occured wwhen trying to logout', 500);
+    }
+
+    return true;
+  }
 }

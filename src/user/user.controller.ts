@@ -5,6 +5,7 @@ import {
   Post,
   UseGuards,
   Req,
+  Delete
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { WebResponse } from '../model/web.model';
@@ -16,6 +17,8 @@ import {
 } from './dto/user.dto';
 import { LocalGuard } from '../auth/guards/local.guard';
 import { Request } from 'express';
+import { JwtGuard } from '../auth/guards/jwt.guard';
+import { User } from '@prisma/client';
 
 @Controller('/api/users')
 export class UserController {
@@ -53,6 +56,21 @@ export class UserController {
   async login(@Req() req: Request): Promise<WebResponse<UserResponseDto>> {
     return {
       data: req.user as UserResponseDto,
+    };
+  }
+
+  @Delete('/logout')
+  @UseGuards(JwtGuard)
+  @HttpCode(200)
+  async logout(@Req() req: Request) {
+    const { id } = req.user as User;
+
+    await this.userService.deleteRefreshToken(id);
+
+    return {
+      data: {
+        message: 'Logged out successfully',
+      }
     };
   }
 }
