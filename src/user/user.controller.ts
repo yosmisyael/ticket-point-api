@@ -1,13 +1,21 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  Post,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { UserService } from './user.service';
 import { WebResponse } from '../model/web.model';
-import { LoginUserDto } from '../auth/dto/auth.dto';
 import {
   MailVerificationRequestDto,
   MailVerificationResponseDto,
   RegisterUserDto,
   UserResponseDto,
 } from './dto/user.dto';
+import { LocalGuard } from '../auth/guards/local.guard';
+import { Request } from 'express';
 
 @Controller('/api/users')
 export class UserController {
@@ -40,14 +48,11 @@ export class UserController {
   }
 
   @Post('/login')
+  @UseGuards(LocalGuard)
   @HttpCode(200)
-  async login(
-    @Body() request: LoginUserDto,
-  ): Promise<WebResponse<UserResponseDto>> {
-    const result = await this.userService.login(request);
-
+  async login(@Req() req: Request): Promise<WebResponse<UserResponseDto>> {
     return {
-      data: result,
+      data: req.user as UserResponseDto,
     };
   }
 }
