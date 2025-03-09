@@ -27,7 +27,11 @@ export class AuthService {
       throw new UnauthorizedException('Email or password is wrong');
     }
 
-    const jwtPayload: AuthDto = { email: user.email, name: user.name };
+    const jwtPayload: AuthDto = {
+      id: user.id,
+      email: user.email,
+      name: user.name
+    };
 
     const token = this.jwtService.sign(jwtPayload);
 
