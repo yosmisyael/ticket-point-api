@@ -32,7 +32,10 @@ export class AuthService {
     const token = this.jwtService.sign(jwtPayload);
 
     await this.prismaService.authentication.create({
-      data: { token }
+      data: {
+        userId: user.id,
+        token: token,
+      }
     })
 
     return {
