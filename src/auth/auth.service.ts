@@ -27,6 +27,10 @@ export class AuthService {
       throw new UnauthorizedException('Email or password is wrong');
     }
 
+    if (!user.verifiedAt) {
+      throw new UnauthorizedException('You should verify your email first');
+    }
+
     const jwtPayload: AuthDto = {
       id: user.id,
       email: user.email,
