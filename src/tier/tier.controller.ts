@@ -22,7 +22,11 @@ export class TierController {
 
   @Patch('/tier/:tierId')
   @HttpCode(200)
-  async updateTiers(@Param('eventId') eventId: number, @Param('tierId') tierId: number, @Body() req: UpdateTierRequestDto) {
+  async updateTiers(
+    @Param('eventId') eventId: number, 
+    @Param('tierId') tierId: number, 
+    @Body() req: UpdateTierRequestDto
+  ):Promise<WebResponse<TierResponseDto>> {
     const result = await this.tierService.updateTier(Number(eventId), Number(tierId), req);
 
     return {
