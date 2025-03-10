@@ -97,8 +97,26 @@ model Event {
   agendas     Agenda[]
   faqs        Faq[]
   tiers       Tier[]
+  location    EventLocation?
 
   @@map("events")
+}
+
+model EventLocation {
+  id          Int       @id @default(autoincrement())
+  platformUrl String?   @map("platform_url")
+  platform    String?
+  venue       String?
+  address     String?
+  latitude    Float?
+  longitude   Float?
+  mapUrl      String?   @map("map_url")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @map("updated_at")
+
+  eventId   Int      @unique @map("event_id")
+  event     Event    @relation(fields: [eventId], references: [id])
+  @@map("event_locations")
 }
 
 model Category {
