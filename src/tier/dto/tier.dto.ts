@@ -17,6 +17,7 @@ export class UpdateTierRequestDto {
   remains?: number;
   currency?: string;
   icon?: string
+  format?: string;
   iconColor?: string;
 }
 

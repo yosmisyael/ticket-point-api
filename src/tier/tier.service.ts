@@ -1,7 +1,7 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { ValidationService } from '../common/validation.service';
 import { PrismaService } from '../common/prisma.service';
-import { CreateTierRequestDto } from './dto/tier.dto';
+import { CreateTierRequestDto, UpdateTierRequestDto } from './dto/tier.dto';
 import { EventService } from '../event/event.service';
 import { TierValidation } from './tier.validation';
 import { Format, Prisma } from '@prisma/client';
@@ -15,7 +15,7 @@ export class TierService {
   ) { }
 
   async validateTierUnique(name: string, format: Format) {
-    const result = await this.prismaService.tier.findFirst({
+    const result = await this.prismaService.tier.findUnique({
       where: {
         name,
         format,
@@ -43,6 +43,69 @@ export class TierService {
     }
 
     const result = await this.prismaService.tier.create({
+      data: validatedData,
+      select: {
+        id: true,
+      },
+    });
+
+    return {
+      id: result.id,
+      message: 'success',
+    };
+  }
+
+  async updateTier(eventId: number, tierId: number, request: UpdateTierRequestDto) {
+    const isPublished = await this.eventService.validateEvent(eventId);
+
+    const validatedData: Prisma.TierUpdateInput = await this.validationService.validate(TierValidation.UPDATE, request);
+
+    const oldData = await this.prismaService.tier.findFirst({
+      where: { id: tierId },
+    });
+
+    if (!oldData) {
+      throw new HttpException('Tier not found', 400);
+    }
+
+    if (isPublished) {
+      const hasOtherChanges = Object.keys(validatedData).some(key =>
+        key !== 'remains' && key !== 'event'
+      );
+
+      if (hasOtherChanges) {
+        throw new HttpException('Tickets cannot be updated for published events', 403);
+      }
+
+      if (validatedData.remains as number > oldData.capacity) {
+        throw new HttpException('Ticket capacity should not less than remaining ticket', 400);
+      }
+
+    } else {
+      if (validatedData.name || validatedData.format) {
+        await this.validateTierUnique(
+          validatedData.name as string || oldData.name,
+          validatedData.format as Format || oldData.format
+        );
+      }
+
+      if (validatedData.remains || validatedData.capacity) {
+        if (validatedData.remains && validatedData.remains > (validatedData.capacity || oldData.capacity)) {
+          validatedData.capacity = validatedData.remains;
+        } else {
+          validatedData.remains = validatedData.capacity;
+        }
+      }
+    }
+
+    validatedData.event = {
+      connect: {
+        id: eventId,
+      }
+    };
+
+    const result = await this.prismaService.tier.update({
+      where: { id: tierId },
       data: validatedData,
       select: {
         id: true,
