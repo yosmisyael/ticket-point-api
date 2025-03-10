@@ -1,9 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { CreateEventRequestDto } from './dto/event.dto';
 import { ValidationService } from '../common/validation.service';
 import { EventValidation } from './event.validation';
 import { PrismaService } from '../common/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, Event } from '@prisma/client';
 
 @Injectable()
 export class EventService {
@@ -65,5 +65,42 @@ export class EventService {
     return {
       message: 'Success'
     };
+  }
+
+  async getEventById(id: number): Promise<Event> {
+    const result = await this.prismaService.event.findFirst({
+      where: {
+        id: id
+      },
+      include: {
+        categories: {
+          select: {
+            name: true,
+            id: true,
+          },
+        },
+        faqs: {
+          select: {
+            id: true,
+            question: true,
+            answer: true,
+          }
+        },
+        agendas: {
+          select: {
+            id: true,
+            startTime: true,
+            endTime: true,
+            title: true,
+          }
+        }
+      }
+    })
+
+    if (!result) {
+      throw new HttpException('Event not found', 404);
+    }
+
+    return result;
   }
 }

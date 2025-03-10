@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
 import { EventService } from './event.service';
 import { CreateEventRequestDto } from './dto/event.dto';
 import { WebResponse } from '../model/web.model';
@@ -16,5 +16,15 @@ export class EventController {
     return {
       data: result,
     };
+  }
+
+  @Get('/:id')
+  @HttpCode(200)
+  async getEvent(@Param('id') id: number) {
+    const result = await this.eventService.getEventById(Number(id));
+
+    return {
+      data: result,
+    }
   }
 }
