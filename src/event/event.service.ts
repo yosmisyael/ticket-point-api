@@ -209,7 +209,156 @@ export class EventService {
     return result;
   }
 
-  async updateEvent(request: UpdateEventRequestDto) {
+  async updateEvent(id: number, request: UpdateEventRequestDto) {
+    const data = await this.validationService.validate(EventValidation.UPDATE, request);
 
+    const event = { ...data.event };
+
+    const eventUpdateData: Prisma.EventUpdateInput = {};
+
+    if (event.title) {
+      eventUpdateData.title = event.title;
+    }
+
+    if (event.description) {
+      eventUpdateData.description = event.description;
+    }
+
+    if (event.coverImage) {
+      eventUpdateData.coverImage = event.coverImage;
+    }
+
+    if (event.isPublished !== undefined) {
+      eventUpdateData.isPublished = event.isPublished;
+    }
+
+    if (event.format?.type) {
+      eventUpdateData.format = event.format.type;
+    }
+
+    if (event.dateTime?.startDate) {
+      eventUpdateData.startDate = new Date(event.dateTime.startDate);
+    }
+
+    if (event.dateTime?.endDate) {
+      eventUpdateData.endDate = new Date(event.dateTime.endDate);
+    }
+
+    if (event.dateTime?.startTime !== undefined) {
+      eventUpdateData.startTime = event.dateTime.startTime;
+    }
+
+    if (event.dateTime?.endTime !== undefined) {
+      eventUpdateData.endTime = event.dateTime.endTime;
+    }
+
+    if (event.dateTime?.timezone) {
+      eventUpdateData.timezone = event.dateTime.timezone;
+    }
+
+    if (event.category) {
+      eventUpdateData.categories = {
+        set: [],
+        connectOrCreate: {
+          where: { name: event.category.toLowerCase() },
+          create: { name: event.category },
+        },
+      };
+    }
+
+    if (event.additionalInfo?.agenda?.items) {
+      eventUpdateData.agendas = {
+        deleteMany: {},
+        create: event.additionalInfo.agenda.items.map((item) => ({
+          startTime: item.startTime,
+          endTime: item.endTime,
+          title: item.title,
+        })),
+      };
+    }
+
+    if (event.additionalInfo?.faq) {
+      eventUpdateData.faqs = {
+        deleteMany: {},
+        create: event.additionalInfo.faq.map((faq) => ({
+          question: faq.question,
+          answer: faq.answer,
+        })),
+      };
+    }
+
+    if (event.format) {
+      const locationCreateData: Prisma.EventLocationCreateWithoutEventInput = {};
+      const locationUpdateData: Prisma.EventLocationUpdateWithoutEventInput = {};
+
+      if (event.format.onsite) {
+        const { venue, address, latitude, longitude, venueNotes } = event.format.onsite;
+
+        if (venue) {
+          locationCreateData.venue = venue;
+          locationUpdateData.venue = venue;
+        }
+
+        if (address) {
+          locationCreateData.address = address;
+          locationUpdateData.address = address;
+        }
+
+        if (latitude !== undefined) {
+          locationCreateData.latitude = latitude;
+          locationUpdateData.latitude = latitude;
+        }
+        if (longitude !== undefined) {
+          locationCreateData.longitude = longitude;
+          locationUpdateData.longitude = longitude;
+        }
+      }
+
+      if (event.format.online) {
+        const { platform, platformUrl } = event.format.online;
+
+        if (platform) {
+          locationCreateData.platform = platform;
+          locationUpdateData.platform = platform;
+        }
+
+        if (platformUrl) {
+          locationCreateData.platformUrl = platformUrl;
+          locationUpdateData.platformUrl = platformUrl;
+        }
+      }
+
+      if (event.format.type === 'ONLINE' && !event.format.onsite) {
+        locationUpdateData.venue = null;
+        locationUpdateData.address = null;
+        locationUpdateData.latitude = null;
+        locationUpdateData.longitude = null;
+      }
+
+      if (event.format.type === 'ONSITE' && !event.format.online) {
+        locationUpdateData.platform = null;
+        locationUpdateData.platformUrl = null;
+      }
+
+      if (Object.keys(locationUpdateData).length > 0) {
+        eventUpdateData.location = {
+          upsert: {
+            create: locationCreateData,
+            update: locationUpdateData,
+          },
+        };
+      }
+    }
+
+    return this.prismaService.event.update({
+      where: { id },
+      data: eventUpdateData,
+      include: {
+        categories: true,
+        agendas: true,
+        faqs: true,
+        location: true,
+      },
+    });
   }
 }

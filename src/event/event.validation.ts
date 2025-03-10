@@ -81,11 +81,6 @@ export class EventValidation {
         endTime: z.number(),
         format: formatRules,
         category: z.string().min(1).max(50),
-        capacity: z.object({
-          total: z.number().int().positive(),
-          onsite: z.number().int().nonnegative().optional(),
-          online: z.number().int().nonnegative().optional()
-        }),
         contact: z.object({
           email: z.string().email(),
           phone: z.string().optional(),
