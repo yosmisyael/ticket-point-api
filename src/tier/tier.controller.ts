@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
 import { CreateTierRequestDto, GetAllTiersDto, TierResponseDto, UpdateTierRequestDto } from './dto/tier.dto';
 import { TierService } from './tier.service';
 import { WebResponse } from '../model/web.model';
@@ -46,5 +46,21 @@ export class TierController {
     return {
       data: result,
     }
+  }
+
+  @Delete('/tier/:tierId')
+  @HttpCode(200)
+  async deleteTier(
+    @Param('eventId') eventId: number,
+    @Param('tierId') tierId: number
+  ): Promise<WebResponse<TierResponseDto>> {
+    await this.tierService.deleteTier(Number(eventId), Number(tierId));
+
+    return {
+      data: {
+        id: tierId,
+        message: 'success',
+      },
+    };
   }
 }

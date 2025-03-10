@@ -183,4 +183,16 @@ export class TierService {
       },
     });
   }
+
+  async deleteTier(eventId: number, tierId: number): Promise<void> {
+    const isPublished = await this.eventService.validateEvent(eventId);
+
+    if (isPublished) {
+      throw new HttpException('Tickets cannot be deleted for published events', 400);
+    }
+
+    await this.prismaService.tier.delete({
+      where: { id: tierId },
+    })
+  }
 }
