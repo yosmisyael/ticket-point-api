@@ -17,19 +17,10 @@ export class CreateEventRequestDto {
       type: 'ONLINE' | 'ONSITE' | 'HYBRID';
       onsite?: {
         venueName: string;
-        address: {
-          street: string;
-          city: string;
-          state: string;
-          postalCode: string;
-          country: string;
-        };
-        coordinates: {
-          latitude: number;
-          longitude: number;
-        };
-        mapUrl?: string;
-        venueNotes?: string;
+        address: string;
+        latitude: number;
+        longitude: number;
+        mapUrl: string;
       };
       online?: {
         platform: string;
@@ -62,4 +53,8 @@ export class CreateEventRequestDto {
       }>;
     };
   };
+}
+
+export class UpdateEventRequestDto {
+
 }

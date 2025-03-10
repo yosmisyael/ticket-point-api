@@ -1,5 +1,5 @@
 import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
-import { CreateEventRequestDto } from './dto/event.dto';
+import { CreateEventRequestDto, UpdateEventRequestDto } from './dto/event.dto';
 import { ValidationService } from '../common/validation.service';
 import { EventValidation } from './event.validation';
 import { PrismaService } from '../common/prisma.service';
@@ -22,12 +22,28 @@ export class EventService {
       description: event.description,
       format: event.format.type,
       coverImage: event.coverImage,
-      startDate: new Date(event.dateTime.startDate),
-      endDate: new Date(event.dateTime.endDate),
-      startTime: event.dateTime.startTime,
-      endTime: event.dateTime.endTime,
+      startDate: new Date(event.startDate),
+      endDate: new Date(event.endDate),
+      startTime: event.startTime,
+      endTime: event.endTime,
       owner: {
         connect: { id: 2 },
+      },
+      location: {
+        create: {
+          ...(event.format.onsite && {
+            venue: event.format.onsite.venue,
+            address: event.format.onsite.address,
+            mapUrl: event.format.onsite.mapUrl,
+            latitude: event.format.onsite.latitude,
+            longitude: event.format.onsite.longitude,
+          }),
+
+          ...(event.format.online && {
+            platform: event.format.online.platform,
+            platformUrl: event.format.online.platformUrl,
+          }),
+        }
       },
       categories: {
         connectOrCreate: {
@@ -73,6 +89,18 @@ export class EventService {
         id: id
       },
       include: {
+        location: {
+          select: {
+            id: true,
+            mapUrl: true,
+            venue: true,
+            latitude: true,
+            longitude: true,
+            address: true,
+            platform: true,
+            platformUrl: true,
+          }
+        },
         categories: {
           select: {
             name: true,
@@ -111,7 +139,6 @@ export class EventService {
   }): Promise<Event[]> {
     const { title, category, ownerId } = filters;
 
-    // Dynamically build the `where` clause
     const where: any = {};
 
     if (title) {
@@ -139,6 +166,18 @@ export class EventService {
     const result = await this.prismaService.event.findMany({
       where,
       include: {
+        location: {
+          select: {
+            id: true,
+            mapUrl: true,
+            venue: true,
+            latitude: true,
+            longitude: true,
+            address: true,
+            platform: true,
+            platformUrl: true,
+          }
+        },
         categories: {
           select: {
             name: true,
@@ -168,5 +207,9 @@ export class EventService {
     }
 
     return result;
+  }
+
+  async updateEvent(request: UpdateEventRequestDto) {
+
   }
 }
