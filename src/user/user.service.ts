@@ -115,6 +115,24 @@ export class UserService {
     });
   }
 
+  async getUserById(userId: number): Promise<UserResponseDto> {
+    const result = await this.prismaService.user.findFirst({
+      where: {
+        id: userId,
+      }
+    });
+
+    if (!result) {
+      throw new HttpException('User not found', 404);
+    }
+
+    return {
+      id: result.id,
+      name: result.name,
+      email: result.email
+    }
+  }
+
   async verifyEmail(request: MailVerificationRequestDto): Promise<MailVerificationResponseDto> {
     const invalidMessage = 'Invalid or expired OTP';
 
