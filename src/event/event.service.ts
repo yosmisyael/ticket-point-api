@@ -209,8 +209,29 @@ export class EventService {
     return result;
   }
 
+  async validateEvent(id: number): Promise<Boolean> {
+    const result = await this.prismaService.event.findFirst({
+      where: { id },
+      select: {
+        isPublished: true
+      }
+    });
+
+    if (!result) {
+      throw new HttpException('Event not found', 404);
+    }
+
+    return result.isPublished;
+  }
+
   async updateEvent(id: number, request: UpdateEventRequestDto) {
+    const isPublished = await this.validateEvent(id);
+
     const data = await this.validationService.validate(EventValidation.UPDATE, request);
+
+    if (isPublished && data.event.isPublished == true) {
+      throw new HttpException("Published event can't be updated", 400);
+    }
 
     const event = { ...data.event };
 
@@ -236,12 +257,33 @@ export class EventService {
       eventUpdateData.format = event.format.type;
     }
 
-    if (event.dateTime?.startDate) {
-      eventUpdateData.startDate = new Date(event.dateTime.startDate);
+    if (event.startDate) {
+      const requestedStartDate = new Date(event.startDate + 'T00:00:00Z');
+
+      const now = new Date();
+      const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+
+
+      if (requestedStartDate < tomorrow) {
+        throw new BadRequestException(
+          'An event must be published at least one day before they start'
+        );
+      }
+      eventUpdateData.startDate = requestedStartDate;
     }
 
-    if (event.dateTime?.endDate) {
-      eventUpdateData.endDate = new Date(event.dateTime.endDate);
+    if (event.endDate) {
+      const requestedEndDate = new Date(event.endDate + 'T00:00:00Z');
+
+      const startDate = new Date(event.startDate + 'T00:00:00Z');
+
+      if (requestedEndDate < startDate) {
+        throw new BadRequestException(
+          'An event must end after the start date of the event'
+        );
+      }
+
+      eventUpdateData.endDate = requestedEndDate;
     }
 
     if (event.dateTime?.startTime !== undefined) {

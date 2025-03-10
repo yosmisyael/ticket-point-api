@@ -75,6 +75,7 @@ export class EventValidation {
           id: z.string().uuid(),
           name: z.string().min(1).max(100)
         }),
+        isPublished: z.boolean().optional(),
         startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
         endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
         startTime: z.number(),
