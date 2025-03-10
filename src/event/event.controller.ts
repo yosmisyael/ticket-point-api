@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { EventService } from './event.service';
 import { CreateEventRequestDto } from './dto/event.dto';
 import { WebResponse } from '../model/web.model';
@@ -16,6 +16,24 @@ export class EventController {
     return {
       data: result,
     };
+  }
+
+  @Get('/search')
+  @HttpCode(200)
+  async searchEvent(
+    @Query('title') title: string,
+    @Query('category') category: string,
+    @Query('organizer') organizer: number,
+  ) {
+    const result = await this.eventService.searchEvents({
+      title,
+      category,
+      ownerId: Number(organizer)
+    });
+
+    return {
+      data: result,
+    }
   }
 
   @Get('/:id')

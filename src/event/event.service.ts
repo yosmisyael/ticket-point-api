@@ -103,4 +103,70 @@ export class EventService {
 
     return result;
   }
+
+  async searchEvents(filters: {
+    title?: string,
+    category?: string,
+    ownerId?: number,
+  }): Promise<Event[]> {
+    const { title, category, ownerId } = filters;
+
+    // Dynamically build the `where` clause
+    const where: any = {};
+
+    if (title) {
+      where.title = {
+        contains: title,
+        mode: 'insensitive',
+      };
+    }
+
+    if (category) {
+      where.categories = {
+        some: {
+          name: {
+            equals: category,
+            mode: 'insensitive',
+          },
+        },
+      };
+    }
+
+    if (ownerId) {
+      where.ownerId = ownerId;
+    }
+
+    const result = await this.prismaService.event.findMany({
+      where,
+      include: {
+        categories: {
+          select: {
+            name: true,
+            id: true,
+          },
+        },
+        faqs: {
+          select: {
+            id: true,
+            question: true,
+            answer: true,
+          }
+        },
+        agendas: {
+          select: {
+            id: true,
+            startTime: true,
+            endTime: true,
+            title: true,
+          }
+        }
+      }
+    })
+
+    if (!result) {
+      throw new HttpException('Event not found', 404);
+    }
+
+    return result;
+  }
 }
