@@ -7,9 +7,18 @@ import { MailModule } from './mail/mail.module';
 import { VerificationModule } from './verification/verification.module';
 import { EventModule } from './event/event.module';
 import { TierModule } from './tier/tier.module';
+import { FileModule } from './file/file.module';
 
 @Module({
-  imports: [CommonModule, UserModule, MailModule, VerificationModule, EventModule, TierModule],
+  imports: [
+    CommonModule,
+    UserModule,
+    MailModule,
+    VerificationModule,
+    EventModule,
+    TierModule,
+    FileModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
