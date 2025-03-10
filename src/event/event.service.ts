@@ -403,4 +403,34 @@ export class EventService {
       },
     });
   }
+
+  async deleteEvent(id: number) {
+    const isPublished = await this.validateEvent(id);
+
+    if (isPublished) {
+      throw new BadRequestException('Cannot delete published event.')
+    }
+
+    await this.prismaService.event.update({
+      where: { id },
+      data: {
+        categories: {
+          set: [],
+        },
+      },
+    });
+
+    await this.prismaService.event.update({
+      where: { id },
+      data: {
+        agendas: { deleteMany: {} },
+        faqs: { deleteMany: {} },
+        location: { delete: true },
+      },
+    });
+
+    return this.prismaService.event.delete({
+      where: { id },
+    });
+  }
 }

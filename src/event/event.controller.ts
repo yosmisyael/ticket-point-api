@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
 import { EventService } from './event.service';
 import { CreateEventRequestDto, UpdateEventRequestDto } from './dto/event.dto';
 import { WebResponse } from '../model/web.model';
@@ -59,4 +59,15 @@ export class EventController {
       data: result,
     }
   }
+
+  @Delete('/:id')
+  @HttpCode(200)
+  async deleteEvent(@Param('id') id: number) {
+    const result = await this.eventService.deleteEvent(Number(id));
+    return {
+      data: result
+    }
+  }
+
+
 }
