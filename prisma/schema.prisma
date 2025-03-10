@@ -82,8 +82,8 @@ model Event {
   title       String
   description String
   format      Format
-  isPublished Boolean    @map("is_published")
-  bannerUrl   String     @map("banner_url")
+  isPublished Boolean    @default(false) @map("is_published")
+  coverImage  String?    @map("cover_image")
   startDate   DateTime   @map("start_date")
   endDate     DateTime   @map("end_date")
   startTime   Int        @map("start_time")
@@ -103,6 +103,7 @@ model Event {
 
 model Category {
   id        Int      @id @default(autoincrement())
+  name      String   @unique()
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @map("updated_at")
   events    Event[]
@@ -124,6 +125,7 @@ model Faq {
 
 model Agenda {
   id        Int      @id @default(autoincrement())
+  title     String
   startTime Int      @map("start_time")
   endTime   Int      @map("end_time")
   timezone  String   @default("Asia/Jakarta")
