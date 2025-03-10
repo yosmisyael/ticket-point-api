@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { ValidationService } from '../common/validation.service';
 import { PrismaService } from '../common/prisma.service';
 import { CreateTierRequestDto } from './dto/tier.dto';
 import { EventService } from '../event/event.service';
 import { TierValidation } from './tier.validation';
-import { Prisma } from '@prisma/client';
+import { Format, Prisma } from '@prisma/client';
 
 @Injectable()
 export class TierService {
@@ -14,10 +14,25 @@ export class TierService {
     private readonly eventService: EventService,
   ) { }
 
+  async validateTierUnique(name: string, format: Format) {
+    const result = await this.prismaService.tier.findFirst({
+      where: {
+        name,
+        format,
+      }
+    });
+
+    if (result) {
+      throw new HttpException('Tier is already exist', 400);
+    }
+  }
+
   async createTier(eventId: number, request: CreateTierRequestDto) {
     await this.eventService.validateEvent(eventId);
 
     const validatedData: Prisma.TierCreateInput = await this.validationService.validate(TierValidation.CREATE, request);
+
+    await this.validateTierUnique(validatedData.name, validatedData.format);
 
     validatedData.remains = validatedData.capacity;
 
