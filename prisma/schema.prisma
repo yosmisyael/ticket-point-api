@@ -43,6 +43,7 @@ model User {
   email          String         @unique
   name           String
   password       String
+  profileUrl     String?
   verifiedAt     DateTime?      @map("verified_at")
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @default(now()) @map("updated_at")
@@ -168,7 +169,7 @@ model Tier {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @default(now()) @map("updated_at")
   eventId      Int      @map("event_id")
-  event        Event    @relation(fields: [eventId], references: [id])
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   tickets      Ticket[]
   tierBenefits TierBenefit[]
 
@@ -182,20 +183,22 @@ model TierBenefit {
   description   String
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @default(now()) @map("updated_at")
-  tier          Tier     @relation(fields: [tierId], references: [id])
+  tier          Tier     @relation(fields: [tierId], references: [id], onDelete: Cascade)
 
   @@map("tier_benefit")
 }
 
 model Ticket {
-  id        Int      @id @default(autoincrement())
-  atendee   String
-  email     String
-  phone     String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @map("updated_at")
-  tierId    Int      @map("tier_id")
-  tier      Tier     @relation(fields: [tierId], references: [id])
+  id          String   @id
+  atendee     String
+  email       String
+  phone       String
+  isCheckin   Boolean
+  checkinDate DateTime
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+  tierId      Int      @map("tier_id")
+  tier        Tier     @relation(fields: [tierId], references: [id], onDelete: Cascade)
 
   @@map("tickets")
 }
