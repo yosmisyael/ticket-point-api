@@ -157,7 +157,7 @@ model Agenda {
 
 model Tier {
   id           Int      @id @default(autoincrement())
-  name         String   @unique()
+  name         String
   price        Int
   capacity     Int
   remains      Int
@@ -170,7 +170,7 @@ model Tier {
   eventId      Int      @map("event_id")
   event        Event    @relation(fields: [eventId], references: [id])
   tickets      Ticket[]
-  tierBennefits  TierBenefit[]
+  tierBenefits TierBenefit[]
 
   @@unique([name, format])
   @@map("tiers")
