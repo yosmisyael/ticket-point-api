@@ -404,7 +404,7 @@ export class EventService {
     });
   }
 
-  async deleteEvent(id: number) {
+  async deleteEvent(id: number): Promise<void> {
     const isPublished = await this.validateEvent(id);
 
     if (isPublished) {
@@ -429,7 +429,7 @@ export class EventService {
       },
     });
 
-    return this.prismaService.event.delete({
+    await this.prismaService.event.delete({
       where: { id },
     });
   }

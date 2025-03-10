@@ -63,11 +63,12 @@ export class EventController {
   @Delete('/:id')
   @HttpCode(200)
   async deleteEvent(@Param('id') id: number) {
-    const result = await this.eventService.deleteEvent(Number(id));
+    await this.eventService.deleteEvent(Number(id));
+
     return {
-      data: result
-    }
+      data: {
+        message: 'success',
+      },
+    };
   }
-
-
 }
