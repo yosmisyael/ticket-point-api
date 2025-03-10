@@ -170,13 +170,13 @@ model Tier {
   eventId      Int      @map("event_id")
   event        Event    @relation(fields: [eventId], references: [id])
   tickets      Ticket[]
-  tierBennefits  TierBennefit[]
+  tierBennefits  TierBenefit[]
 
   @@unique([name, format])
   @@map("tiers")
 }
 
-model TierBennefit {
+model TierBenefit {
   id            Int      @id @default(autoincrement())
   tierId        Int      @map("tier_id")
   description   String
@@ -184,7 +184,7 @@ model TierBennefit {
   updatedAt     DateTime @default(now()) @map("updated_at")
   tier          Tier     @relation(fields: [tierId], references: [id])
 
-  @@map("tier_bennefit")
+  @@map("tier_benefit")
 }
 
 model Ticket {
