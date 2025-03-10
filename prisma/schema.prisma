@@ -156,20 +156,34 @@ model Agenda {
 }
 
 model Tier {
-  id        Int      @id @default(autoincrement())
-  name      String
-  price     Int
-  capacity  Int
-  remains   Int
-  format    Format
-  benefits  String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @default(now()) @map("updated_at")
-  eventId   Int      @map("event_id")
-  event     Event    @relation(fields: [eventId], references: [id])
-  tickets   Ticket[]
+  id           Int      @id @default(autoincrement())
+  name         String
+  price        Int
+  capacity     Int
+  remains      Int
+  format       Format
+  currency     String
+  icon         String?
+  iconColor    String   @map("icon_color")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @map("updated_at")
+  eventId      Int      @map("event_id")
+  event        Event    @relation(fields: [eventId], references: [id])
+  tickets      Ticket[]
+  tierBennefits  TierBennefit[]
 
   @@map("tiers")
+}
+
+model TierBennefit {
+  id            Int      @id @default(autoincrement())
+  tierId        Int      @map("tier_id")
+  description   String
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @map("updated_at")
+  tier          Tier     @relation(fields: [tierId], references: [id])
+
+  @@map("tier_bennefit")
 }
 
 model Ticket {
