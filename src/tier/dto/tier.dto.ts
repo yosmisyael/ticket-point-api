@@ -1,3 +1,5 @@
+import { Tier } from '@prisma/client';
+
 export class CreateTierRequestDto {
   name: string;
   capacity: number;
@@ -26,4 +28,9 @@ export class UpdateTierRequestDto {
 export class TierResponseDto {
   id: number;
   message: string;
+}
+
+export class GetAllTiersDto {
+  message: string;
+  tiers?: Tier[];
 }

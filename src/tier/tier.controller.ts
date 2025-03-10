@@ -1,12 +1,26 @@
-import { Body, Controller, HttpCode, Param, Patch, Post } from '@nestjs/common';
-import { CreateTierRequestDto, TierResponseDto, UpdateTierRequestDto } from './dto/tier.dto';
+import { Body, Controller, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
+import { CreateTierRequestDto, GetAllTiersDto, TierResponseDto, UpdateTierRequestDto } from './dto/tier.dto';
 import { TierService } from './tier.service';
 import { WebResponse } from '../model/web.model';
+import { Tier } from '@prisma/client';
 
 @Controller('/api/events/:eventId')
 export class TierController {
   constructor(private readonly tierService: TierService) {}
 
+  @Get('/tier')
+  @HttpCode(200)
+  async getTiersByEventId(eventId: number): Promise<WebResponse<GetAllTiersDto>> {
+    const result: Tier[] = await this.tierService.getTiersByEventId(eventId);
+    
+    return {
+      data: {
+        message: 'success',
+        tiers: result,
+      },
+    };
+  }
+  
   @Post('/tier')
   @HttpCode(200)
   async createTier(
