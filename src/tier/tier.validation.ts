@@ -9,6 +9,7 @@ export class TierValidation {
     icon: z.string(),
     iconColor: z.string(),
     format: z.enum(['ONLINE', 'ONSITE', 'HYBRID']),
+    benefits: z.array(z.string()).nonempty({ message: 'Tier should have at least one benefit' })
   });
 
   static readonly UPDATE: ZodType = z.object({
@@ -20,5 +21,6 @@ export class TierValidation {
     icon: z.string().optional(),
     iconColor: z.string().optional(),
     format: z.enum(['ONLINE', 'ONSITE', 'HYBRID']).optional(),
+    benefits: z.array(z.string()).nonempty({ message: 'Tier should have at least one benefit' }).optional(),
   });
 }

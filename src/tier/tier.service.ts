@@ -17,8 +17,10 @@ export class TierService {
   async validateTierUnique(name: string, format: Format) {
     const result = await this.prismaService.tier.findUnique({
       where: {
-        name,
-        format,
+        name_format: {
+          name,
+          format
+        }
       }
     });
 
@@ -30,20 +32,35 @@ export class TierService {
   async createTier(eventId: number, request: CreateTierRequestDto) {
     await this.eventService.validateEvent(eventId);
 
-    const validatedData: Prisma.TierCreateInput = await this.validationService.validate(TierValidation.CREATE, request);
+    const validatedData: CreateTierRequestDto = await this.validationService.validate(TierValidation.CREATE, request);
 
-    await this.validateTierUnique(validatedData.name, validatedData.format);
+    await this.validateTierUnique(validatedData.name, validatedData.format as Format);
 
     validatedData.remains = validatedData.capacity;
 
-    validatedData.event = {
-      connect: {
-        id: eventId,
+    const prepData: Prisma.TierCreateInput = {
+      name: validatedData.name,
+      price: validatedData.price as number,
+      currency: validatedData.currency,
+      capacity: validatedData.capacity,
+      remains: validatedData.remains,
+      icon: validatedData.icon,
+      iconColor: validatedData.iconColor,
+      format: validatedData.format as Format,
+      tierBenefits: {
+        create: validatedData.benefits.map((benefit: string) => ({
+          description: benefit,
+        }))
+      },
+      event: {
+        connect: {
+          id: eventId,
+        }
       }
     }
 
     const result = await this.prismaService.tier.create({
-      data: validatedData,
+      data: prepData,
       select: {
         id: true,
       },
@@ -58,7 +75,7 @@ export class TierService {
   async updateTier(eventId: number, tierId: number, request: UpdateTierRequestDto) {
     const isPublished = await this.eventService.validateEvent(eventId);
 
-    const validatedData: Prisma.TierUpdateInput = await this.validationService.validate(TierValidation.UPDATE, request);
+    const validatedData: UpdateTierRequestDto = await this.validationService.validate(TierValidation.UPDATE, request);
 
     const oldData = await this.prismaService.tier.findFirst({
       where: { id: tierId },
@@ -98,15 +115,34 @@ export class TierService {
       }
     }
 
-    validatedData.event = {
-      connect: {
-        id: eventId,
+    const prepData: Prisma.TierUpdateInput = {
+      name: validatedData.name,
+      price: validatedData.price as number,
+      currency: validatedData.currency,
+      capacity: validatedData.capacity,
+      remains: validatedData.remains,
+      icon: validatedData.icon,
+      iconColor: validatedData.iconColor,
+      format: validatedData.format as Format,
+      event: {
+        connect: {
+          id: eventId,
+        }
       }
-    };
+    }
+
+    if (validatedData.benefits) {
+      prepData.tierBenefits = {
+        deleteMany: {},
+        create: validatedData.benefits && validatedData.benefits.map((benefit: string) => ({
+          description: benefit,
+        })),
+      };
+    }
 
     const result = await this.prismaService.tier.update({
       where: { id: tierId },
-      data: validatedData,
+      data: prepData,
       select: {
         id: true,
       },
