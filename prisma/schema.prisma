@@ -189,16 +189,19 @@ model TierBenefit {
 }
 
 model Ticket {
-  id          String   @id
-  atendee     String
-  email       String
-  phone       String
-  isCheckin   Boolean
-  checkinDate DateTime
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @map("updated_at")
-  tierId      Int      @map("tier_id")
-  tier        Tier     @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  id              Int       @id @default(autoincrement())
+  credential      String?   @unique()
+  attendee        String
+  email           String
+  phone           String
+  paymentStat     Boolean   @default(false)
+  paymetMethode   String?
+  isCheckin       Boolean   @default(false) @map("is_check_in")
+  checkinDate     DateTime? @map("check_in_date")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @map("updated_at")
+  tierId          Int?      @map("tier_id")
+  tier            Tier?     @relation(fields: [tierId], references: [id], onDelete: Cascade)
 
   @@map("tickets")
 }
