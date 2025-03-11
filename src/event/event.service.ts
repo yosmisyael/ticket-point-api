@@ -225,7 +225,7 @@ export class EventService {
 
     const isPublished = oldData.isPublished;
 
-    if (isPublished && oldData.endDate < new Date()) {
+    if (isPublished && (oldData.endDate < new Date() || oldData.startDate < new Date())) {
       throw new HttpException('Cannot update past event', 400);
     }
 
