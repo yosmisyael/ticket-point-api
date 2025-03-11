@@ -1,9 +1,10 @@
-import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreateEventRequestDto, EventResponseDto, UpdateEventRequestDto } from './dto/event.dto';
 import { ValidationService } from '../common/validation.service';
 import { EventValidation } from './event.validation';
 import { PrismaService } from '../common/prisma.service';
 import { Prisma, Event } from '@prisma/client';
+import { UserPayload } from '../auth/model/request.model';
 
 @Injectable()
 export class EventService {
@@ -12,10 +13,30 @@ export class EventService {
     private readonly prismaService: PrismaService
     ) {
   }
-  async createEvent(request: CreateEventRequestDto): Promise<EventResponseDto> {
-    const data = await this.validationService.validate(EventValidation.CREATE, request);
+  async createEvent(user: UserPayload, payload: CreateEventRequestDto): Promise<EventResponseDto> {
+    const data = await this.validationService.validate(EventValidation.CREATE, payload);
 
     const event = { ...data.event }
+
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+
+    const startDateValidation = await this.validateEventDate(event.startDate, tomorrow, 'gte');
+
+    if (!startDateValidation) {
+      throw new BadRequestException('An event must start at least one day from today');
+    }
+
+    const requestedEndDate = new Date(event.endDate + 'T00:00:00Z');
+    const startDate = new Date(event.startDate + 'T00:00:00Z');
+
+    const isValid = await this.validateEventDate(requestedEndDate, startDate, 'gte');
+
+    if (!isValid) {
+      throw new BadRequestException('An event must end after or on the same date of start date of the event');
+    }
 
     const validatedData: Prisma.EventCreateInput = {
       title: event.title,
@@ -27,7 +48,7 @@ export class EventService {
       startTime: event.startTime,
       endTime: event.endTime,
       owner: {
-        connect: { id: 9 },
+        connect: { id: user.id },
       },
       location: {
         create: {
@@ -145,6 +166,7 @@ export class EventService {
     const dateRange = filters.time ? this.getDateRange(filters.time) : null;
     const result = await this.prismaService.event.findMany({
       where: {
+        isPublished: true,
         ...(filters.title && {
           title: {
             contains: filters.title,
@@ -190,7 +212,7 @@ export class EventService {
         faqs: true,
         agendas: true,
       }
-    })
+    });
 
     if (!result) {
       throw new HttpException('Event not found', 404);
@@ -214,7 +236,28 @@ export class EventService {
     return result.isPublished;
   }
 
-  async updateEvent(id: number, request: UpdateEventRequestDto): Promise<EventResponseDto> {
+  async validateEventDate(requestedDate: Date, allowedDate: Date, type: 'lt' | 'lte' | 'gt' | 'gte') {
+    const formattedRequestDate = new Date(requestedDate);
+
+    const formattedAllowedDate = new Date(allowedDate);
+
+    switch (type) {
+      case 'lt':
+        return formattedRequestDate < formattedAllowedDate;
+      case 'lte':
+        return formattedRequestDate <= formattedAllowedDate;
+      case 'gt':
+        return formattedRequestDate > formattedAllowedDate;
+      case 'gte':
+        return formattedRequestDate >= formattedAllowedDate;
+      default:
+        throw new Error('Invalid comparison type');
+    }
+  }
+
+  async updateEvent(id: number, user: UserPayload, payload: UpdateEventRequestDto): Promise<EventResponseDto> {
+    await this.validationService.validate(EventValidation.UPDATE, payload);
+
     const oldData = await this.prismaService.event.findFirst({
       where: {id},
     })
@@ -223,13 +266,17 @@ export class EventService {
       throw new HttpException('Event not found', 404);
     }
 
+    if (oldData.ownerId != user.id) {
+      throw new UnauthorizedException('Unauthorized action');
+    }
+
     const isPublished = oldData.isPublished;
 
     if (isPublished && (oldData.endDate < new Date() || oldData.startDate < new Date())) {
       throw new HttpException('Cannot update past event', 400);
     }
 
-    const data = await this.validationService.validate(EventValidation.UPDATE, request);
+    const data = await this.validationService.validate(EventValidation.UPDATE, payload);
 
     if (isPublished && data.event.isPublished == true) {
       throw new HttpException("Published event can't be updated", 400);
@@ -274,28 +321,28 @@ export class EventService {
 
     if (event.startDate) {
       const requestedStartDate = new Date(event.startDate + 'T00:00:00Z');
-
       const now = new Date();
-      const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+      const tomorrow = new Date(now);
+      tomorrow.setDate(now.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
 
+      const isValid = await this.validateEventDate(requestedStartDate, tomorrow, 'gte');
 
-      if (requestedStartDate < tomorrow) {
-        throw new BadRequestException(
-          'An event must be published at least one day before they start'
-        );
+      if (!isValid) {
+        throw new BadRequestException('An event must start at least one day from today');
       }
+
       eventUpdateData.startDate = requestedStartDate;
     }
 
     if (event.endDate) {
       const requestedEndDate = new Date(event.endDate + 'T00:00:00Z');
-
       const startDate = new Date(event.startDate + 'T00:00:00Z');
 
-      if (requestedEndDate < startDate) {
-        throw new BadRequestException(
-          'An event must end after the start date of the event'
-        );
+      const isValid = await this.validateEventDate(requestedEndDate, startDate, 'gte');
+
+      if (!isValid) {
+        throw new BadRequestException('An event must end after or on the same date of start date of the event');
       }
 
       eventUpdateData.endDate = requestedEndDate;
@@ -349,7 +396,7 @@ export class EventService {
       const locationUpdateData: Prisma.EventLocationUpdateWithoutEventInput = {};
 
       if (event.format.onsite) {
-        const { venue, address, latitude, longitude, venueNotes } = event.format.onsite;
+        const { venue, address, latitude, longitude } = event.format.onsite;
 
         if (venue) {
           locationCreateData.venue = venue;
@@ -410,12 +457,9 @@ export class EventService {
     const result = await this.prismaService.event.update({
       where: { id },
       data: eventUpdateData,
-      include: {
-        categories: true,
-        agendas: true,
-        faqs: true,
-        location: true,
-      },
+      select: {
+        id: true,
+      }
     });
 
     return {
@@ -424,17 +468,22 @@ export class EventService {
     }
   }
 
-  async deleteEvent(id: number): Promise<void> {
+  async deleteEvent(id: number, user: UserPayload): Promise<EventResponseDto> {
     const event = await this.prismaService.event.findUnique({
       where: { id },
       select: {
         isPublished: true,
         endDate: true,
+        ownerId: true,
       },
     });
 
     if (!event) {
       throw new BadRequestException('Event not found');
+    }
+
+    if (event.ownerId !== user.id) {
+      throw new UnauthorizedException('Unauthorized action');
     }
 
     if (event.isPublished) {
@@ -467,5 +516,10 @@ export class EventService {
     await this.prismaService.event.delete({
       where: { id },
     });
+
+    return {
+      message: 'success',
+      id,
+    }
   }
 }

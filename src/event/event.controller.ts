@@ -1,17 +1,36 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode, HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query, Req,
+  UseGuards,
+} from '@nestjs/common';
 import { EventService } from './event.service';
 import { CreateEventRequestDto, EventResponseDto, UpdateEventRequestDto } from './dto/event.dto';
 import { WebResponse } from '../model/web.model';
+import { JwtGuard } from 'src/auth/guards/jwt.guard';
+import { RequestWithUser } from '../auth/model/request.model';
 
 @Controller('/api/events')
 export class EventController {
-  constructor(
-    private readonly eventService: EventService) {}
+  constructor(private readonly eventService: EventService) {}
 
   @Post()
-  @HttpCode(200)
-  async createEvent(@Body() req: CreateEventRequestDto): Promise<WebResponse<{ message: string }>> {
-    const result: { message: string } = await this.eventService.createEvent(req);
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(JwtGuard)
+  async createEvent(
+    @Body() payload: CreateEventRequestDto,
+    @Req() { user }: RequestWithUser,
+  ): Promise<WebResponse<EventResponseDto>> {
+    const result: EventResponseDto = await this.eventService.createEvent(
+      user,
+      payload,
+    );
 
     return {
       data: result,
@@ -19,7 +38,7 @@ export class EventController {
   }
 
   @Get('/search')
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
   async searchEvent(
     @Query('title') title: string,
     @Query('category') category: string,
@@ -38,41 +57,45 @@ export class EventController {
     return {
       message: 'success',
       data: result,
-    }
+    };
   }
 
   @Get('/:id')
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
   async getEvent(@Param('id') id: number) {
     const result = await this.eventService.getEventById(Number(id));
 
     return {
       data: result,
-    }
+    };
   }
 
   @Patch('/:id')
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard)
   async updateEvent(
+    @Req() { user }: RequestWithUser,
     @Param('id') id: number,
-    @Body() req: UpdateEventRequestDto
+    @Body() payload: UpdateEventRequestDto,
   ): Promise<WebResponse<EventResponseDto>> {
-    const result = await this.eventService.updateEvent(Number(id), req);
+    const result = await this.eventService.updateEvent(Number(id), user, payload);
 
     return {
       data: result,
-    }
+    };
   }
 
   @Delete('/:id')
-  @HttpCode(200)
-  async deleteEvent(@Param('id') id: number) {
-    await this.eventService.deleteEvent(Number(id));
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard)
+  async deleteEvent(
+    @Param('id') id: number,
+    @Req() { user }: RequestWithUser,
+  ): Promise<WebResponse<EventResponseDto>> {
+    const data = await this.eventService.deleteEvent(Number(id), user);
 
     return {
-      data: {
-        message: 'success',
-      },
+      data,
     };
   }
 }
