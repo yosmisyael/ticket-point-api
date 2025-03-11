@@ -52,6 +52,11 @@ export class CreateEventRequestDto {
   };
 }
 
+export class EventResponseDto {
+  message: string;
+  id: number;
+}
+
 export class UpdateEventRequestDto {
   event: {
     title: string;

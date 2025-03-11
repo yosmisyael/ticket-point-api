@@ -1,5 +1,5 @@
 import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
-import { CreateEventRequestDto, UpdateEventRequestDto } from './dto/event.dto';
+import { CreateEventRequestDto, EventResponseDto, UpdateEventRequestDto } from './dto/event.dto';
 import { ValidationService } from '../common/validation.service';
 import { EventValidation } from './event.validation';
 import { PrismaService } from '../common/prisma.service';
@@ -12,7 +12,7 @@ export class EventService {
     private readonly prismaService: PrismaService
     ) {
   }
-  async createEvent(request: CreateEventRequestDto): Promise<{ message: string }> {
+  async createEvent(request: CreateEventRequestDto): Promise<EventResponseDto> {
     const data = await this.validationService.validate(EventValidation.CREATE, request);
 
     const event = { ...data.event }
@@ -27,7 +27,7 @@ export class EventService {
       startTime: event.startTime,
       endTime: event.endTime,
       owner: {
-        connect: { id: 2 },
+        connect: { id: 9 },
       },
       location: {
         create: {
@@ -79,6 +79,7 @@ export class EventService {
     }
 
     return {
+      id: result.id,
       message: 'Success'
     };
   }
@@ -224,7 +225,7 @@ export class EventService {
     return result.isPublished;
   }
 
-  async updateEvent(id: number, request: UpdateEventRequestDto) {
+  async updateEvent(id: number, request: UpdateEventRequestDto): Promise<EventResponseDto> {
     const isPublished = await this.validateEvent(id);
 
     const data = await this.validationService.validate(EventValidation.UPDATE, request);
@@ -392,7 +393,7 @@ export class EventService {
       }
     }
 
-    return this.prismaService.event.update({
+    const result = await this.prismaService.event.update({
       where: { id },
       data: eventUpdateData,
       include: {
@@ -402,6 +403,11 @@ export class EventService {
         location: true,
       },
     });
+
+    return {
+      message: 'success',
+      id: result.id,
+    }
   }
 
   async deleteEvent(id: number): Promise<void> {
