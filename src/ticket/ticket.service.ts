@@ -6,9 +6,13 @@ import {
 } from './dto/ticket.dto';
 import { v4 as uuid } from 'uuid';
 import * as QRCode from 'qrcode';
+import * as PDFDocument from 'pdfkit';
+import * as fs from 'fs-extra';
 import { ValidationService } from 'src/common/validation.service';
 import { TicketValidation } from './ticket.validation';
 import { MailService } from '../mail/mail.service';
+import { join } from 'path';
+import { Event, Prisma } from '@prisma/client';
 
 @Injectable()
 export class TicketService {
@@ -34,7 +38,92 @@ export class TicketService {
     });
   }
 
-  async generateTicket(bookId: number) {
+  async generateTicket(credentials: string, eventCtx): Promise<string> {
+    const storageDir = join(__dirname, '../../', 'storage');
+    await fs.ensureDir(storageDir);
+
+    const timestamp = new Date().getTime();
+    const qrImagePath = join(storageDir, `qr-${timestamp}.png`);
+    const pdfPath = join(storageDir, `ticket-${timestamp}.pdf`);
+
+    await QRCode.toFile(qrImagePath, credentials, {
+      errorCorrectionLevel: 'H',
+      width: 200,
+      margin: 1
+    });
+
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({
+          size: 'A5',
+          margin: 20,
+        });
+
+        const stream = fs.createWriteStream(pdfPath);
+        doc.pipe(stream);
+
+        doc.fontSize(18).font('Helvetica-Bold').text(eventCtx.title, {
+          align: 'center',
+        });
+        doc.moveDown(0.5);
+
+        doc.fontSize(12).font('Helvetica').text(`Date: ${eventCtx.startDate}`, {
+          align: 'center',
+        });
+        doc.moveDown(0.5);
+
+        doc.fontSize(12).font('Helvetica').text(`Venue: ${eventCtx.location.venue}`, {
+          align: 'center',
+        });
+        doc.moveDown(0.2);
+        doc.fontSize(12).font('Helvetica').text(`Location: ${eventCtx.location.address}`, {
+          align: 'center',
+        });
+        doc.moveDown(1);
+
+        doc.moveTo(20, doc.y).lineTo(doc.page.width - 20, doc.y).stroke();
+        doc.moveDown(1);
+
+        // Add QR code image
+        doc.image(qrImagePath, {
+          fit: [200, 200],
+          align: 'center',
+          valign: 'center',
+        });
+        doc.moveDown(16);
+
+        doc.fontSize(10).font('Helvetica').text('Scan this QR code at the event entrance:', {
+          align: 'center',
+        });
+        doc.moveDown(0.5);
+        doc.fontSize(10).font('Helvetica').text('1. Ensure your device screen brightness is set to maximum.', {
+          align: 'center',
+        });
+        doc.fontSize(10).font('Helvetica').text('2. Present the QR code for scanning.', {
+          align: 'center',
+        });
+        doc.moveDown(1);
+
+        doc.fontSize(8).font('Helvetica').text('© 2025 TicketPoint. All rights reserved.', {
+          align: 'center',
+        });
+
+        doc.end();
+
+        stream.on('finish', () => {
+          resolve(pdfPath);
+        });
+
+        stream.on('error', (error) => {
+          reject(error);
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  async sendConfirmation(bookId: number) {
     const data = await this.prismaService.ticket.findFirst({
       where: {
         id: bookId,
@@ -42,7 +131,7 @@ export class TicketService {
     });
 
     if (!data) {
-      throw new HttpException('Data not found', HttpStatus.NOT_FOUND);
+      throw new HttpException('Booking data is invalid', HttpStatus.NOT_FOUND);
     }
 
     const isBilling = true;
@@ -51,37 +140,68 @@ export class TicketService {
       throw new HttpException('User has not made ticket payment', 400);
     }
 
-    const ticketId: string = uuid();
+    const ticketCredentials: string = uuid();
 
-    const ticketQR: string = await QRCode.toDataURL(ticketId);
+    const event = await this.prismaService.event.findFirst({
+      where: {
+        tiers: {
+          some: {
+            id: data.tierId as number,
+          },
+        },
+      },
+      include: {
+        tiers: true,
+        location: true,
+      },
+    })
+
+    const generatedTicketPath: string = await this.generateTicket(ticketCredentials, event);
 
     await this.mailService.sendMail({
       subject: 'TicketPoint - Your OTP Code',
       recipients: [{ name: data.attendee ?? '', address: data.email }],
       html: `
-      <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-          <div style="background-color: #2196F3; color: #ffffff; text-align: center; padding: 20px;">
-            <img src="" alt="Your App Logo" style="max-width: 150px; height: auto;">
-            <h1 style="margin: 10px 0 0; font-size: 24px;">Your Ticket</h1>
-          </div>
-          <div style="padding: 20px; text-align: center;">
-            <p style="font-size: 16px; color: #333333;">Please use the following ticket code to verify your validation during the event</p>
-            <p style="font-size: 16px; color: #333333;">Scan the QR code below:</p>
-            <div style="font-size: 32px; font-weight: bold; color: #000; margin: 20px 0; background-color: #FFC400; padding: 10px; border-radius: 8px; display: inline-block;">
-              <img src="${ticketQR}" alt="QR Code" style="max-width: 200px; height: auto; margin: 20px 0;">
+        <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+            <div style="background-color: #4DABF5; color: #ffffff; text-align: center; padding: 20px;">
+              <img src="https://raw.githubusercontent.com/yosmisyael/ticket-point/refs/heads/main/public/ticket-point.png" alt="TicketPoint" style="max-width: 150px; height: auto;">
+              <h1 style="margin: 10px 0 0; font-size: 24px;">Your Ticket Order Confirmation</h1>
             </div>
-            <p style="font-size: 14px; color: #666666;">Do not share it with anyone.</p>
-          </div>
-          <div style="background-color: #f4f4f4; text-align: center; padding: 10px; font-size: 12px; color: #666666;">
-            <p style="margin: 0;">&copy; 2025 TicketPoint. All rights reserved.</p>
+            <div style="padding: 20px; text-align: center;">
+              <p style="font-size: 16px; color: #333333;">Thank you for purchasing your ticket with TicketPoint! Below are the details of your order and instructions on how to use your ticket:</p>
+              <p style="font-size: 16px; color: #333333; font-weight: bold;">Instructions:</p>
+              <ul style="text-align: left; font-size: 14px; color: #666666; margin: 20px 0; padding-left: 20px;">
+                <li>Your ticket QR code is attached to this email as a PDF file. You can download and save it for offline use.</li>
+                <li>Present the QR code at the event entrance for scanning. Ensure your device screen brightness is set to maximum for easy scanning.</li>
+                <li>If you prefer a printed copy, you can print the attached PDF and bring it to the event.</li>
+                <li>Do not share your QR code with anyone. It is unique to your ticket and grants access to the event.</li>
+              </ul>
+        
+              <p style="font-size: 14px; color: #666666;">If you have any questions or need assistance, please contact our support team at <a href="mailto:support@ticketpoint.com" style="color: #4DABF5;">support@ticketpoint.com</a>.</p>
+            </div>
+            <div style="background-color: #f4f4f4; text-align: center; padding: 10px; font-size: 12px; color: #666666;">
+              <p style="margin: 0;">&copy; 2025 TicketPoint. All rights reserved.</p>
+            </div>
           </div>
         </div>
-      </div>
-    `,
+      `,
+      attachments: [
+        {
+          path: generatedTicketPath,
+        }
+      ]
     });
-  }
 
+    await this.prismaService.ticket.update({
+      where: {
+        id: bookId
+      },
+      data: {
+        credential: ticketCredentials,
+      }
+    })
+  }
 
   async validateTicket(bookId: number, request: ValidateTicketRequestDto) {
     const validatedData = await this.validationService.validate(TicketValidation.VALIDATE, request);

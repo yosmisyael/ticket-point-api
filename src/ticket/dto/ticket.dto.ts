@@ -7,10 +7,11 @@ export class BookTicketRequestDto {
 
 export class BookTicketResponseDto {
   message: string;
-  bookId: number;
+  bookingId: number;
 }
 
 export class GenerateTicketResponseDto {
+  bookingId: number;
   message: string;
 }
 

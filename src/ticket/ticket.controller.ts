@@ -27,33 +27,35 @@ export class TicketController {
     return {
       data: {
         message: 'success',
-        bookId: result.id,
+        bookingId: result.id,
       }
     };
   }
 
-  @Post('/book/:bookId')
+  @Post('/booking/:bookingId')
   @HttpCode(HttpStatus.OK)
-  async generateTicket(@Param('bookId') bookId: number): Promise<WebResponse<GenerateTicketResponseDto>> {
-    await this.ticketService.generateTicket(Number(bookId));
+  async generateTicket(@Param('bookingId') bookingId: number): Promise<WebResponse<GenerateTicketResponseDto>> {
+    await this.ticketService.sendConfirmation(Number(bookingId));
     
     return {
       data: {
         message: 'success',
+        bookingId: Number(bookingId)
       }
     }
   }
 
-  @Patch('/book/:bookId')
+  @Patch('/booking/:bookId')
   @HttpCode(HttpStatus.OK)
   async validateTicket(
-    @Param('bookId') bookId: number,
+    @Param('bookId') bookingId: number,
     @Body() req: ValidateTicketRequestDto
   ): Promise<WebResponse<GenerateTicketResponseDto>> {
-    await this.ticketService.validateTicket(Number(bookId), req);
+    await this.ticketService.validateTicket(Number(bookingId), req);
 
     return {
       data: {
+        bookingId: Number(bookingId),
         message: 'success',
       }
     }
