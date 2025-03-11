@@ -109,12 +109,40 @@ export class EventService {
     return result;
   }
 
+  getDateRange(timeFilter: string) {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    switch (timeFilter) {
+      case 'tomorrow':
+        return {
+          start: new Date(tomorrow.setHours(0, 0, 0, 0)),
+          end: new Date(tomorrow.setHours(23, 59, 59, 999)),
+        };
+      case 'this weekend':
+        return {
+          start: new Date(startOfWeek.setDate(startOfWeek.getDate() + 5)),
+          end: new Date(endOfWeek.setHours(23, 59, 59, 999)),
+        };
+      default:
+        return null;
+    }
+  };
+
   async searchEvents(filters: {
     title?: string,
     category?: string,
     ownerId?: number,
     location?: string,
+    time?: string,
   }): Promise<Event[]> {
+    const dateRange = filters.time ? this.getDateRange(filters.time) : null;
     const result = await this.prismaService.event.findMany({
       where: {
         ...(filters.title && {
@@ -142,6 +170,12 @@ export class EventService {
               contains: filters.location,
               mode: 'insensitive',
             },
+          },
+        }),
+        ...(dateRange && {
+          startDate: {
+            gte: dateRange.start, // Greater than or equal to the start of the range
+            lte: dateRange.end, // Less than or equal to the end of the range
           },
         }),
       },

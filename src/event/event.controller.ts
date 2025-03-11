@@ -25,12 +25,14 @@ export class EventController {
     @Query('category') category: string,
     @Query('organizer') organizer: number,
     @Query('location') location: string,
+    @Query('time') time: string,
   ) {
     const result = await this.eventService.searchEvents({
       title,
       category,
       ownerId: Number(organizer),
       location,
+      time,
     });
 
     return {
