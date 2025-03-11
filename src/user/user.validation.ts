@@ -18,4 +18,9 @@ export class UserValidation {
     password: z.string().min(1).max(100).optional(),
     organizationId: z.string().min(1).optional(),
   });
+
+  static readonly REQUEST_OTP: ZodType = z.object({
+    email: z.string().email(),
+    id: z.number().min(1),
+  });
 }

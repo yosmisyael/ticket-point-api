@@ -5,14 +5,16 @@ import {
   Post,
   UseGuards,
   Req,
-  Delete, Patch,
+  Delete,
+  Patch,
+  HttpStatus,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { WebResponse } from '../model/web.model';
 import {
   MailVerificationRequestDto,
   MailVerificationResponseDto,
-  RegisterUserDto, UpdateUserDto,
+  RegisterUserDto,
   UserResponseDto,
 } from './dto/user.dto';
 import { LocalGuard } from '../auth/guards/local.guard';
@@ -38,6 +40,18 @@ export class UserController {
     };
   }
 
+  @Post('/request-token')
+  @HttpCode(HttpStatus.OK)
+  async requestValidationToken(@Body() req: { id: number }) {
+    await this.userService.generateEmailVerification(req.id);
+
+    return {
+      data: {
+        message: 'success'
+      },
+    }
+  }
+  
   @Post('/verify-email')
   @HttpCode(200)
   async verifyEmail(

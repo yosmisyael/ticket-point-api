@@ -86,7 +86,7 @@ export class UserService {
       throw new UnprocessableEntityException('Account already verified');
     }
 
-    const otp = await this.verificationService.generateOtp(user.id);
+    const otp: string = await this.verificationService.generateOtp(user.id);
 
     await this.mailService.sendMail({
       subject: 'TicketPoint - Your OTP Code',
@@ -94,8 +94,8 @@ export class UserService {
       html: `
           <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
             <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-              <div style="background-color: #2196F3; color: #ffffff; text-align: center; padding: 20px;">
-                <img src="" alt="Your App Logo" style="max-width: 150px; height: auto;">
+              <div style="background-color: #4DABF5; color: #ffffff; text-align: center; padding: 20px;">
+                <img src="https://raw.githubusercontent.com/yosmisyael/ticket-point/refs/heads/main/public/ticket-point.png" alt="TicketPoint" style="max-width: 150px; height: auto;">
                 <h1 style="margin: 10px 0 0; font-size: 24px;">Your OTP Code</h1>
               </div>
               <div style="padding: 20px; text-align: center;">
@@ -175,8 +175,8 @@ export class UserService {
           <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
             <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
               <!-- Header Section -->
-              <div style="background-color: #2196F3; color: #ffffff; text-align: center; padding: 20px;">
-                <img src="/" alt="Your App Logo" style="max-width: 150px; height: auto;">
+              <div style="background-color: #4DABF5; color: #ffffff; text-align: center; padding: 20px;">
+                <img src="https://raw.githubusercontent.com/yosmisyael/ticket-point/refs/heads/main/public/ticket-point.png" alt="TicketPoint" style="max-width: 150px; height: auto;">
                 <h1 style="margin: 10px 0 0; font-size: 24px;">Welcome to TicketPoint!</h1>
               </div>
           
