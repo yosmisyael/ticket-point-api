@@ -133,7 +133,7 @@ export class UserService {
       throw new HttpException('Email or password is wrong', 400);
     }
 
-    const isPasswordValid = await bcrypt.compare(user.password, password);
+    const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
       throw new HttpException('Email or password is wrong', 400);
