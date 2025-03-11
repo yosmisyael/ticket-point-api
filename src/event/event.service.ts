@@ -90,41 +90,17 @@ export class EventService {
         id: id
       },
       include: {
-        location: {
-          select: {
-            id: true,
-            mapUrl: true,
-            venue: true,
-            latitude: true,
-            longitude: true,
-            address: true,
-            platform: true,
-            platformUrl: true,
-          }
-        },
+        location: true,
         categories: {
           select: {
             name: true,
             id: true,
           },
         },
-        faqs: {
-          select: {
-            id: true,
-            question: true,
-            answer: true,
-          }
-        },
-        agendas: {
-          select: {
-            id: true,
-            startTime: true,
-            endTime: true,
-            title: true,
-          }
-        }
+        faqs: true,
+        agendas: true,
       }
-    })
+    });
 
     if (!result) {
       throw new HttpException('Event not found', 404);
@@ -137,69 +113,48 @@ export class EventService {
     title?: string,
     category?: string,
     ownerId?: number,
+    location?: string,
   }): Promise<Event[]> {
-    const { title, category, ownerId } = filters;
-
-    const where: any = {};
-
-    if (title) {
-      where.title = {
-        contains: title,
-        mode: 'insensitive',
-      };
-    }
-
-    if (category) {
-      where.categories = {
-        some: {
-          name: {
-            equals: category,
+    const result = await this.prismaService.event.findMany({
+      where: {
+        ...(filters.title && {
+          title: {
+            contains: filters.title,
             mode: 'insensitive',
           },
-        },
-      };
-    }
-
-    if (ownerId) {
-      where.ownerId = ownerId;
-    }
-
-    const result = await this.prismaService.event.findMany({
-      where,
+        }),
+        ...(filters.category && {
+          categories: {
+            some: {
+              name: {
+                equals: filters.category,
+                mode: 'insensitive',
+              },
+            },
+          },
+        }),
+        ...(filters.ownerId && {
+          ownerId: filters.ownerId,
+        }),
+        ...(filters.location && {
+          location: {
+            address: {
+              contains: filters.location,
+              mode: 'insensitive',
+            },
+          },
+        }),
+      },
       include: {
-        location: {
-          select: {
-            id: true,
-            mapUrl: true,
-            venue: true,
-            latitude: true,
-            longitude: true,
-            address: true,
-            platform: true,
-            platformUrl: true,
-          }
-        },
+        location: true,
         categories: {
           select: {
             name: true,
             id: true,
           },
         },
-        faqs: {
-          select: {
-            id: true,
-            question: true,
-            answer: true,
-          }
-        },
-        agendas: {
-          select: {
-            id: true,
-            startTime: true,
-            endTime: true,
-            title: true,
-          }
-        }
+        faqs: true,
+        agendas: true,
       }
     })
 

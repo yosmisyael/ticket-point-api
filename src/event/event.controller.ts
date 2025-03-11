@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
 import { EventService } from './event.service';
-import { CreateEventRequestDto, UpdateEventRequestDto } from './dto/event.dto';
+import { CreateEventRequestDto, EventResponseDto, UpdateEventRequestDto } from './dto/event.dto';
 import { WebResponse } from '../model/web.model';
 
 @Controller('/api/events')
@@ -24,14 +24,17 @@ export class EventController {
     @Query('title') title: string,
     @Query('category') category: string,
     @Query('organizer') organizer: number,
+    @Query('location') location: string,
   ) {
     const result = await this.eventService.searchEvents({
       title,
       category,
-      ownerId: Number(organizer)
+      ownerId: Number(organizer),
+      location,
     });
 
     return {
+      message: 'success',
       data: result,
     }
   }
@@ -51,11 +54,10 @@ export class EventController {
   async updateEvent(
     @Param('id') id: number,
     @Body() req: UpdateEventRequestDto
-  ) {
+  ): Promise<WebResponse<EventResponseDto>> {
     const result = await this.eventService.updateEvent(Number(id), req);
 
     return {
-      message: 'success',
       data: result,
     }
   }
