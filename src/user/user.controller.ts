@@ -14,7 +14,7 @@ import { WebResponse } from '../model/web.model';
 import {
   MailVerificationRequestDto,
   MailVerificationResponseDto,
-  RegisterUserDto,
+  RegisterUserDto, RequestOTPDto,
   UserResponseDto,
 } from './dto/user.dto';
 import { LocalGuard } from '../auth/guards/local.guard';
@@ -27,13 +27,13 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
-  @HttpCode(200)
+  @HttpCode(HttpStatus.CREATED)
   async register(
     @Body() request: RegisterUserDto,
   ): Promise<WebResponse<UserResponseDto>> {
     const result = await this.userService.register(request);
 
-    await this.userService.generateEmailVerification(result.id);
+    await this.userService.generateEmailVerification(result);
 
     return {
       data: result,
@@ -42,8 +42,8 @@ export class UserController {
 
   @Post('/request-token')
   @HttpCode(HttpStatus.OK)
-  async requestValidationToken(@Body() req: { id: number }) {
-    await this.userService.generateEmailVerification(req.id);
+  async requestValidationToken(@Body() req: RequestOTPDto) {
+    await this.userService.validateOTPRequest(req);
 
     return {
       data: {
@@ -51,9 +51,9 @@ export class UserController {
       },
     }
   }
-  
+
   @Post('/verify-email')
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
   async verifyEmail(
     @Body() request: MailVerificationRequestDto,
   ): Promise<WebResponse<MailVerificationResponseDto>> {

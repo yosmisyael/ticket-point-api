@@ -1,7 +1,6 @@
 import {
   HttpException,
   Injectable,
-  NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { ValidationService } from '../common/validation.service';
@@ -15,7 +14,7 @@ import {
   MailVerificationRequestDto,
   MailVerificationResponseDto,
   RegisterUserDto,
-  UserResponseDto, UpdateUserDto,
+  UserResponseDto, UpdateUserDto, RequestOTPDto,
 } from './dto/user.dto';
 
 @Injectable()
@@ -44,11 +43,10 @@ export class UserService {
   }
 
   async register(request: RegisterUserDto): Promise<UserResponseDto> {
-    const registerRequest =
-      this.validationService.validate<RegisterUserDto>(
-        UserValidation.REGISTER,
-        request,
-      );
+    const registerRequest = this.validationService.validate<RegisterUserDto>(
+      UserValidation.REGISTER,
+      request,
+    );
 
     const isAvailable: boolean = await this.verifyUniqueEmail(
       registerRequest.email,
@@ -71,26 +69,17 @@ export class UserService {
     };
   }
 
-  async generateEmailVerification(userId: number): Promise<void> {
-    const user = await this.prismaService.user.findFirst({
-      where: {
-        id: userId
-      }
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    if (user.verifiedAt) {
-      throw new UnprocessableEntityException('Account already verified');
-    }
-
+  async generateEmailVerification(user: UserResponseDto): Promise<void> {
     const otp: string = await this.verificationService.generateOtp(user.id);
 
     await this.mailService.sendMail({
       subject: 'TicketPoint - Your OTP Code',
-      recipients: [{ name: user.name ?? '', address: user.email }],
+      recipients: [
+        {
+          name: user.name ?? '',
+          address: user.email,
+        },
+      ],
       html: `
           <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
             <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
@@ -111,7 +100,7 @@ export class UserService {
               </div>
             </div>
           </div>
-        `
+        `,
     });
   }
 
@@ -119,7 +108,7 @@ export class UserService {
     const result = await this.prismaService.user.findFirst({
       where: {
         id: userId,
-      }
+      },
     });
 
     if (!result) {
@@ -129,17 +118,47 @@ export class UserService {
     return {
       id: result.id,
       name: result.name,
-      email: result.email
-    }
+      email: result.email,
+    };
   }
 
-  async verifyEmail(request: MailVerificationRequestDto): Promise<MailVerificationResponseDto> {
+  async validateOTPRequest({ email, password }: RequestOTPDto): Promise<void> {
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        email,
+      },
+    });
+
+    if (!user) {
+      throw new HttpException('Email or password is wrong', 400);
+    }
+
+    const isPasswordValid = await bcrypt.compare(user.password, password);
+
+    if (!isPasswordValid) {
+      throw new HttpException('Email or password is wrong', 400);
+    }
+
+    if (user.verifiedAt) {
+      throw new UnprocessableEntityException('Account already verified');
+    }
+
+    return this.generateEmailVerification({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    });
+  }
+
+  async verifyEmail(
+    request: MailVerificationRequestDto,
+  ): Promise<MailVerificationResponseDto> {
     const invalidMessage = 'Invalid or expired OTP';
 
     const { id } = request;
 
     const user = await this.prismaService.user.findFirst({
-      where: { id }
+      where: { id },
     });
 
     if (!user) {
@@ -161,11 +180,11 @@ export class UserService {
 
     await this.prismaService.user.update({
       where: {
-        id: user.id
+        id: user.id,
       },
       data: {
         verifiedAt: new Date(),
-      }
+      },
     });
 
     await this.mailService.sendMail({
@@ -200,7 +219,7 @@ export class UserService {
               </div>
             </div>
           </div>
-        `
+        `,
     });
 
     return {
@@ -208,13 +227,20 @@ export class UserService {
     };
   }
 
-  async update(userId: number, request: UpdateUserDto): Promise<UserResponseDto> {
+  async update(
+    userId: number,
+    request: UpdateUserDto,
+  ): Promise<UserResponseDto> {
     const updateRequest: UpdateUserDto =
-      this.validationService.validate<UpdateUserDto>(UserValidation.UPDATE, request);
-
+      this.validationService.validate<UpdateUserDto>(
+        UserValidation.UPDATE,
+        request,
+      );
 
     if (updateRequest.email) {
-      const isAvailable: boolean = await this.verifyUniqueEmail(updateRequest.email);
+      const isAvailable: boolean = await this.verifyUniqueEmail(
+        updateRequest.email,
+      );
       if (!isAvailable) {
         throw new HttpException('Email is already taken', 400);
       }
@@ -242,7 +268,7 @@ export class UserService {
     const result = await this.prismaService.authentication.deleteMany({
       where: {
         userId: id,
-      }
+      },
     });
 
     if (result.count == 0) {

@@ -27,3 +27,8 @@ export class MailVerificationRequestDto {
 export class MailVerificationResponseDto {
   message: string;
 }
+
+export class RequestOTPDto {
+  email: string;
+  password: string;
+}
