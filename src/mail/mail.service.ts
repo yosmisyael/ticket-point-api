@@ -16,6 +16,7 @@ export class MailService {
         from: `"${this.configService.get('APP_NAME')}" <no-reply@ticketpoint.site>`,
         subject,
         html,
+        attachments: data.attachments ? data.attachments : [],
       });
 
       return {
