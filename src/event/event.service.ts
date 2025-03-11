@@ -251,6 +251,19 @@ export class EventService {
     }
 
     if (event.isPublished !== undefined) {
+      if (event.isPublished) {
+        const validateTiers = await this.prismaService.event.findFirst({
+          where: { id },
+          select: {
+            tiers: true,
+          }
+        });
+
+        if (!validateTiers || validateTiers.tiers.length == 0) {
+          throw new BadRequestException('Event should have ticket plan before published');
+        }
+      }
+
       eventUpdateData.isPublished = event.isPublished;
     }
 
