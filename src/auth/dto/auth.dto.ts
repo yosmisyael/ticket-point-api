@@ -4,7 +4,7 @@ export class AuthRequestDto {
 }
 
 export class AuthDto {
-  id?: number;
+  sub?: number;
   email: string;
   name: string;
 }

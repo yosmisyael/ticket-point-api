@@ -32,7 +32,7 @@ export class AuthService {
     }
 
     const jwtPayload: AuthDto = {
-      id: user.id,
+      sub: user.id,
       email: user.email,
       name: user.name
     };
