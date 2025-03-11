@@ -2,7 +2,6 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtPayload } from 'jsonwebtoken';
 import { PrismaService } from '../../common/prisma.service';
 
 @Injectable()
@@ -29,6 +28,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: {
         id: payload.sub,
       },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      }
     });
 
     if (!user) {
