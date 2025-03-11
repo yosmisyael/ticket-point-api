@@ -215,7 +215,19 @@ export class EventService {
   }
 
   async updateEvent(id: number, request: UpdateEventRequestDto): Promise<EventResponseDto> {
-    const isPublished = await this.validateEvent(id);
+    const oldData = await this.prismaService.event.findFirst({
+      where: {id},
+    })
+
+    if (!oldData) {
+      throw new HttpException('Event not found', 404);
+    }
+
+    const isPublished = oldData.isPublished;
+
+    if (isPublished && oldData.endDate < new Date()) {
+      throw new HttpException('Cannot update past event', 400);
+    }
 
     const data = await this.validationService.validate(EventValidation.UPDATE, request);
 
@@ -413,10 +425,25 @@ export class EventService {
   }
 
   async deleteEvent(id: number): Promise<void> {
-    const isPublished = await this.validateEvent(id);
+    const event = await this.prismaService.event.findUnique({
+      where: { id },
+      select: {
+        isPublished: true,
+        endDate: true,
+      },
+    });
 
-    if (isPublished) {
-      throw new BadRequestException('Cannot delete published event.')
+    if (!event) {
+      throw new BadRequestException('Event not found');
+    }
+
+    if (event.isPublished) {
+      throw new BadRequestException('Cannot delete published event');
+    }
+
+    const currentDate = new Date();
+    if (event.endDate < currentDate) {
+      throw new BadRequestException('Cannot delete past event.');
     }
 
     await this.prismaService.event.update({
