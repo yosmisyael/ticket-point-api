@@ -1,15 +1,29 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { CreateTierRequestDto, GetAllTiersDto, TierResponseDto, UpdateTierRequestDto } from './dto/tier.dto';
 import { TierService } from './tier.service';
 import { WebResponse } from '../model/web.model';
 import { Tier } from '@prisma/client';
+import { JwtGuard } from '../auth/guards/jwt.guard';
+import { RequestWithUser } from '../auth/model/request.model';
 
 @Controller('/api/events/:eventId')
 export class TierController {
   constructor(private readonly tierService: TierService) {}
 
   @Get('/tier')
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
   async getTiersByEventId(eventId: number): Promise<WebResponse<GetAllTiersDto>> {
     const result: Tier[] = await this.tierService.getTiersByEventId(eventId);
     
@@ -22,12 +36,14 @@ export class TierController {
   }
   
   @Post('/tier')
-  @HttpCode(200)
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(JwtGuard)
   async createTier(
+    @Req() { user }: RequestWithUser,
     @Param('eventId') eventId: number,
-    @Body() req: CreateTierRequestDto
+    @Body() payload: CreateTierRequestDto
   ): Promise<WebResponse<TierResponseDto>> {
-    const result = await this.tierService.createTier(Number(eventId), req);
+    const result = await this.tierService.createTier(user, Number(eventId), payload);
     
     return {
       data: result,
@@ -35,13 +51,15 @@ export class TierController {
   }
 
   @Patch('/tier/:tierId')
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard)
   async updateTiers(
+    @Req() { user }: RequestWithUser,
     @Param('eventId') eventId: number, 
     @Param('tierId') tierId: number, 
-    @Body() req: UpdateTierRequestDto
+    @Body() payload: UpdateTierRequestDto
   ):Promise<WebResponse<TierResponseDto>> {
-    const result = await this.tierService.updateTier(Number(eventId), Number(tierId), req);
+    const result = await this.tierService.updateTier(user, Number(eventId), Number(tierId), payload);
 
     return {
       data: result,
@@ -49,18 +67,17 @@ export class TierController {
   }
 
   @Delete('/tier/:tierId')
-  @HttpCode(200)
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard)
   async deleteTier(
+    @Req() { user }: RequestWithUser,
     @Param('eventId') eventId: number,
     @Param('tierId') tierId: number
   ): Promise<WebResponse<TierResponseDto>> {
-    await this.tierService.deleteTier(Number(eventId), Number(tierId));
+    const result = await this.tierService.deleteTier(user, Number(eventId), Number(tierId));
 
     return {
-      data: {
-        id: tierId,
-        message: 'success',
-      },
+      data: result,
     };
   }
 }

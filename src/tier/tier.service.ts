@@ -1,10 +1,11 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ValidationService } from '../common/validation.service';
 import { PrismaService } from '../common/prisma.service';
-import { CreateTierRequestDto, UpdateTierRequestDto } from './dto/tier.dto';
+import { CreateTierRequestDto, TierResponseDto, UpdateTierRequestDto } from './dto/tier.dto';
 import { EventService } from '../event/event.service';
 import { TierValidation } from './tier.validation';
 import { Format, Prisma, Tier } from '@prisma/client';
+import { UserPayload } from '../auth/model/request.model';
 
 @Injectable()
 export class TierService {
@@ -13,6 +14,18 @@ export class TierService {
     private readonly prismaService: PrismaService,
     private readonly eventService: EventService,
   ) {}
+
+  async validateTierExists(tierId: number): Promise<void> {
+    const result = await this.prismaService.tier.findFirst({
+      where: {
+        id: tierId,
+      },
+    });
+
+    if (!result) {
+      throw new HttpException('Tier not found', HttpStatus.NOT_FOUND);
+    }
+  }
 
   async validateTierUnique(name: string, format: Format) {
     const result = await this.prismaService.tier.findUnique({
@@ -29,8 +42,27 @@ export class TierService {
     }
   }
 
-  async createTier(eventId: number, request: CreateTierRequestDto) {
-    await this.eventService.validateEvent(eventId);
+  async validateTierAuthorization(userId: number, eventId: number) {
+    const event = await this.prismaService.event.findFirst({
+      where: {
+        id: eventId
+      },
+      select: {
+        ownerId: true,
+      }
+    });
+
+    if (!event) {
+      throw new HttpException('Event not found', 400);
+    }
+
+    if (event.ownerId !== userId) {
+      throw new UnauthorizedException('Unauthorized action');
+    }
+  }
+
+  async createTier(user: UserPayload, eventId: number, request: CreateTierRequestDto): Promise<TierResponseDto> {
+    await this.validateTierAuthorization(user.id, eventId);
 
     const validatedData: CreateTierRequestDto =
       await this.validationService.validate(TierValidation.CREATE, request);
@@ -77,10 +109,15 @@ export class TierService {
   }
 
   async updateTier(
+    user: UserPayload,
     eventId: number,
     tierId: number,
     request: UpdateTierRequestDto,
-  ) {
+  ): Promise<TierResponseDto> {
+    await this.validateTierExists(tierId);
+
+    await this.validateTierAuthorization(user.id, eventId);
+
     const isPublished = await this.eventService.validateEvent(eventId);
 
     const validatedData: UpdateTierRequestDto =
@@ -184,15 +221,34 @@ export class TierService {
     });
   }
 
-  async deleteTier(eventId: number, tierId: number): Promise<void> {
+  async deleteTier(user: UserPayload, eventId: number, tierId: number): Promise<TierResponseDto> {
+    await this.validateTierExists(tierId);
+
+    await this.validateTierAuthorization(user.id, eventId);
+
     const isPublished = await this.eventService.validateEvent(eventId);
 
     if (isPublished) {
       throw new HttpException('Tickets cannot be deleted for published events', 400);
     }
 
-    await this.prismaService.tier.delete({
-      where: { id: tierId },
-    })
+    await this.prismaService.$transaction([
+      this.prismaService.tierBenefit.deleteMany({
+        where: {
+          tierId: tierId,
+        },
+      }),
+
+      this.prismaService.tier.delete({
+        where: {
+          id: tierId,
+        },
+      }),
+    ]);
+
+    return {
+      id: tierId,
+      message: 'success',
+    }
   }
 }
