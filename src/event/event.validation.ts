@@ -69,24 +69,24 @@ export class EventValidation {
 
     static readonly UPDATE: ZodType = z.object({
       event: z.object({
-        title: z.string().min(1).max(255),
-        description: z.string().min(1),
+        title: z.string().min(1).max(255).optional(),
+        description: z.string().min(1).optional(),
         organizer: z.object({
           id: z.string().uuid(),
           name: z.string().min(1).max(100)
-        }),
+        }).optional(),
         isPublished: z.boolean().optional(),
-        startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-        endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-        startTime: z.number(),
-        endTime: z.number(),
-        format: formatRules,
-        category: z.string().min(1).max(50),
+        startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        startTime: z.number().optional(),
+        endTime: z.number().optional(),
+        format: formatRules.optional(),
+        category: z.string().min(1).max(50).optional(),
         contact: z.object({
           email: z.string().email(),
           phone: z.string().optional(),
           website: z.string().url().optional()
-        }),
+        }).optional(),
         coverImage: z.string().url().optional(),
         additionalInfo: additionalInfoRules,
       })
