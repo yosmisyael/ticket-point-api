@@ -123,6 +123,8 @@ export class UserService {
   }
 
   async validateOTPRequest({ email, password }: RequestOTPDto): Promise<void> {
+    await this.validationService.validate(UserValidation.REQUEST_OTP, { email, password });
+
     const user = await this.prismaService.user.findUnique({
       where: {
         email,
@@ -241,6 +243,7 @@ export class UserService {
       const isAvailable: boolean = await this.verifyUniqueEmail(
         updateRequest.email,
       );
+
       if (!isAvailable) {
         throw new HttpException('Email is already taken', 400);
       }

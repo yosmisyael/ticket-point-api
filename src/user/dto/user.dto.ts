@@ -17,6 +17,7 @@ export class UpdateUserDto {
   password?: string;
   name?: string;
   organizationId?: number;
+  profileUrl?: string;
 }
 
 export class MailVerificationRequestDto {
