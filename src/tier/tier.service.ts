@@ -49,6 +49,7 @@ export class TierService {
       },
       select: {
         ownerId: true,
+        isPublished: true,
       }
     });
 
@@ -58,6 +59,10 @@ export class TierService {
 
     if (event.ownerId !== userId) {
       throw new UnauthorizedException('Unauthorized action');
+    }
+
+    if (event.isPublished) {
+      throw new HttpException('Cannot add, update, or delete tier to published event', 400)
     }
   }
 
@@ -212,7 +217,7 @@ export class TierService {
 
   async getTiersByEventId(eventId: number): Promise<Tier[]> {
     await this.eventService.validateEvent(eventId);
-
+    console.log(eventId)
     return this.prismaService.tier.findMany({
       where: { eventId },
       include: {

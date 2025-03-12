@@ -24,8 +24,8 @@ export class TierController {
 
   @Get('/tier')
   @HttpCode(HttpStatus.OK)
-  async getTiersByEventId(eventId: number): Promise<WebResponse<GetAllTiersDto>> {
-    const result: Tier[] = await this.tierService.getTiersByEventId(eventId);
+  async getTiersByEventId(@Param('eventId') eventId: number): Promise<WebResponse<GetAllTiersDto>> {
+    const result: Tier[] = await this.tierService.getTiersByEventId(Number(eventId));
     
     return {
       data: {
