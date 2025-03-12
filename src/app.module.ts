@@ -8,6 +8,7 @@ import { VerificationModule } from './verification/verification.module';
 import { EventModule } from './event/event.module';
 import { TierModule } from './tier/tier.module';
 import { FileModule } from './file/file.module';
+import { TicketModule } from './ticket/ticket.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { FileModule } from './file/file.module';
     EventModule,
     TierModule,
     FileModule,
+    TicketModule,
   ],
   controllers: [AppController],
   providers: [AppService],
