@@ -179,10 +179,10 @@ export class TicketService {
     });
   }
 
-  async sendConfirmation(bookId: number) {
+  async sendConfirmation(bookingId: number) {
     const data = await this.prismaService.ticket.findFirst({
       where: {
-        id: bookId,
+        id: bookingId,
       },
     });
 
@@ -259,7 +259,7 @@ export class TicketService {
 
     await this.prismaService.ticket.update({
       where: {
-        id: bookId,
+        id: bookingId,
       },
       data: {
         credential: ticketCredentials,
@@ -267,7 +267,7 @@ export class TicketService {
     });
   }
 
-  async validateTicket(bookId: number, request: ValidateTicketRequestDto) {
+  async validateTicket(user: UserPayload, bookingId: number, request: ValidateTicketRequestDto) {
     const validatedData = await this.validationService.validate(
       TicketValidation.VALIDATE,
       request,
@@ -276,7 +276,7 @@ export class TicketService {
     const result = await this.prismaService.ticket.findUnique({
       where: {
         credential: validatedData.credential,
-        id: bookId,
+        id: bookingId,
       },
     });
 
@@ -290,7 +290,7 @@ export class TicketService {
 
     await this.prismaService.ticket.update({
       where: {
-        id: bookId,
+        id: bookingId,
       },
       data: {
         isCheckin: true,

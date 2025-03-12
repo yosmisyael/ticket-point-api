@@ -52,13 +52,15 @@ export class TicketController {
     }
   }
 
-  @Patch('/booking/:bookId')
+  @Patch('/booking/:bookingId')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard)
   async validateTicket(
-    @Param('bookId') bookingId: number,
-    @Body() req: ValidateTicketRequestDto
+    @Param('bookingId') bookingId: number,
+    @Body() payload: ValidateTicketRequestDto,
+    @Req() { user }: RequestWithUser,
   ): Promise<WebResponse<GenerateTicketResponseDto>> {
-    await this.ticketService.validateTicket(Number(bookingId), req);
+    await this.ticketService.validateTicket(user, Number(bookingId), payload);
 
     return {
       data: {
