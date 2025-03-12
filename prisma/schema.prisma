@@ -191,11 +191,14 @@ model TierBenefit {
 model Ticket {
   id              Int       @id @default(autoincrement())
   credential      String?   @unique()
-  attendee        String
+  firstName       String    @map("first_name")
+  lastName        String    @map("last_name")
   email           String
   phone           String
+  position        String
+  organization    String    @map("organization_name")
   paymentStat     Boolean   @default(false)
-  paymetMethode   String?
+  paymentMethod   String?
   isCheckin       Boolean   @default(false) @map("is_check_in")
   checkinDate     DateTime? @map("check_in_date")
   createdAt       DateTime  @default(now()) @map("created_at")
