@@ -1,9 +1,12 @@
 import { z, ZodType } from 'zod';
 
 export class TicketValidation {
-  static readonly BOOK: ZodType = z.object({
+  static readonly BOOKING: ZodType = z.object({
     email: z.string().email(),
-    attendee: z.string().min(1),
+    firstName: z.string().min(1),
+    lastName: z.string().min(1),
+    organization: z.string().min(1),
+    position: z.string().min(1),
     phone: z.string().min(1),
     tierId: z.number(),
   });

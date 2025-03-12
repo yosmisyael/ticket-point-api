@@ -1,19 +1,26 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
-  Param, Patch,
+  Param,
+  Patch,
   Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import {
-  BookTicketRequestDto,
-  BookTicketResponseDto,
+  BookingTicketRequestDto,
+  BookingTicketResponseDto,
   GenerateTicketResponseDto,
-  ValidateTicketRequestDto,
+  AttendeeResponseDto,
+  ValidateTicketRequestDto, AttendancesResponseDto,
 } from './dto/ticket.dto';
 import { TicketService } from './ticket.service';
 import { WebResponse } from '../model/web.model';
+import { JwtGuard } from '../auth/guards/jwt.guard';
+import { RequestWithUser } from '../auth/model/request.model';
 
 @Controller('/api/tickets')
 export class TicketController {
@@ -21,7 +28,7 @@ export class TicketController {
 
   @Post('/booking')
   @HttpCode(HttpStatus.CREATED)
-  async bookTicket(@Body() bookingData: BookTicketRequestDto): Promise<WebResponse<BookTicketResponseDto>> {
+  async bookTicket(@Body() bookingData: BookingTicketRequestDto): Promise<WebResponse<BookingTicketResponseDto>> {
     const result = await this.ticketService.bookTicket(bookingData);
 
     return {
@@ -59,5 +66,34 @@ export class TicketController {
         message: 'success',
       }
     }
+  }
+
+  @Get('/:ticketId')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard)
+  async getAttendeeByCredentials(
+    @Req() { user }: RequestWithUser,
+    @Param(':/ticketId') ticketId: string,
+  ): Promise<WebResponse<AttendeeResponseDto>> {
+    console.log(ticketId)
+    const result: AttendeeResponseDto  = await this.ticketService.getAttendeeByCredentials(user, ticketId);
+
+    return {
+      data: result
+    }
+  }
+
+  @Get('/attendances/:eventId')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard)
+  async getAllEventAttendances(
+    @Req() { user }: RequestWithUser,
+    @Param('eventId') eventId: number,
+  ): Promise<WebResponse<AttendancesResponseDto>> {
+    const result = await  this.ticketService.getEventValidAttendances(user, Number(eventId));
+
+    return {
+      data: result
+    };
   }
 }

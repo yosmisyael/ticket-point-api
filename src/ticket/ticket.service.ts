@@ -1,7 +1,14 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import {
-  BookTicketRequestDto,
+  AttendeeResponseDto,
+  AttendancesResponseDto,
+  BookingTicketRequestDto,
   ValidateTicketRequestDto,
 } from './dto/ticket.dto';
 import { v4 as uuid } from 'uuid';
@@ -12,7 +19,7 @@ import { ValidationService } from 'src/common/validation.service';
 import { TicketValidation } from './ticket.validation';
 import { MailService } from '../mail/mail.service';
 import { join } from 'path';
-import { Event, Prisma } from '@prisma/client';
+import { UserPayload } from '../auth/model/request.model';
 
 @Injectable()
 export class TicketService {
@@ -22,19 +29,25 @@ export class TicketService {
     private readonly mailService: MailService,
   ) {}
 
-  async bookTicket(request: BookTicketRequestDto): Promise<{ id: number }> {
-    const validatedData = await this.validationService.validate(TicketValidation.BOOK, request);
+  async bookTicket(request: BookingTicketRequestDto): Promise<{ id: number }> {
+    const validated = await this.validationService.validate(
+      TicketValidation.BOOKING,
+      request,
+    );
 
     return this.prismaService.ticket.create({
       data: {
-        email: validatedData.email,
-        attendee: validatedData.attendee,
-        phone: validatedData.phone,
-        tierId: validatedData.tierId
+        email: validated.email,
+        firstName: validated.firstName,
+        lastName: validated.lastName,
+        phone: validated.phone,
+        organization: validated.organization,
+        position: validated.position,
+        tierId: validated.tierId,
       },
       select: {
         id: true,
-      }
+      },
     });
   }
 
@@ -49,7 +62,7 @@ export class TicketService {
     await QRCode.toFile(qrImagePath, credentials, {
       errorCorrectionLevel: 'H',
       width: 200,
-      margin: 1
+      margin: 1,
     });
 
     return new Promise((resolve, reject) => {
@@ -67,46 +80,89 @@ export class TicketService {
         });
         doc.moveDown(0.5);
 
-        doc.fontSize(12).font('Helvetica').text(`Date: ${eventCtx.startDate}`, {
+        doc.fontSize(12).font('Helvetica').text(`Date: ${new Date(eventCtx.startDate).toLocaleString('en-US', {
+          timeZone: 'Asia/Jakarta',
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: 'numeric',
+          timeZoneName: 'longOffset'
+        })}`, {
           align: 'center',
         });
         doc.moveDown(0.5);
 
-        doc.fontSize(12).font('Helvetica').text(`Venue: ${eventCtx.location.venue}`, {
-          align: 'center',
-        });
+        doc
+          .fontSize(12)
+          .font('Helvetica')
+          .text(`Venue: ${eventCtx.location.venue}`, {
+            align: 'center',
+          });
         doc.moveDown(0.2);
-        doc.fontSize(12).font('Helvetica').text(`Location: ${eventCtx.location.address}`, {
-          align: 'center',
-        });
+        doc
+          .fontSize(12)
+          .font('Helvetica')
+          .text(`Location: ${eventCtx.location.address}`, {
+            align: 'center',
+          });
         doc.moveDown(1);
 
-        doc.moveTo(20, doc.y).lineTo(doc.page.width - 20, doc.y).stroke();
+        doc
+          .moveTo(20, doc.y)
+          .lineTo(doc.page.width - 20, doc.y)
+          .stroke();
         doc.moveDown(1);
+        const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+        const pageHeight = doc.page.height - doc.page.margins.top - doc.page.margins.bottom;
 
-        // Add QR code image
-        doc.image(qrImagePath, {
+        const qrWidth = 200;
+        const qrHeight = 200;
+
+        const x = (pageWidth - qrWidth) / 2 + doc.page.margins.left;
+        const y = (pageHeight - qrHeight) / 3 + doc.page.margins.top;
+
+        doc.image(qrImagePath,x,y, {
           fit: [200, 200],
-          align: 'center',
-          valign: 'center',
         });
         doc.moveDown(16);
 
-        doc.fontSize(10).font('Helvetica').text('Scan this QR code at the event entrance:', {
-          align: 'center',
-        });
+        doc
+          .fontSize(10)
+          .font('Helvetica')
+          .text(`Ticket ID: ${credentials}`, {
+            align: 'center',
+          });
+        doc.moveDown(5);
+
+        doc
+          .fontSize(10)
+          .font('Helvetica')
+          .text('Scan this QR code at the event entrance:', {
+            align: 'center',
+          });
         doc.moveDown(0.5);
-        doc.fontSize(10).font('Helvetica').text('1. Ensure your device screen brightness is set to maximum.', {
-          align: 'center',
-        });
-        doc.fontSize(10).font('Helvetica').text('2. Present the QR code for scanning.', {
-          align: 'center',
-        });
+        doc
+          .fontSize(10)
+          .font('Helvetica')
+          .text('1. Ensure your device screen brightness is set to maximum.', {
+            align: 'center',
+          });
+        doc
+          .fontSize(10)
+          .font('Helvetica')
+          .text('2. Present the QR code for scanning.', {
+            align: 'center',
+          });
         doc.moveDown(1);
 
-        doc.fontSize(8).font('Helvetica').text('© 2025 TicketPoint. All rights reserved.', {
-          align: 'center',
-        });
+        doc
+          .fontSize(8)
+          .font('Helvetica')
+          .text('© 2025 TicketPoint. All rights reserved.', {
+            align: 'center',
+          });
 
         doc.end();
 
@@ -154,13 +210,21 @@ export class TicketService {
         tiers: true,
         location: true,
       },
-    })
+    });
 
-    const generatedTicketPath: string = await this.generateTicket(ticketCredentials, event);
+    const generatedTicketPath: string = await this.generateTicket(
+      ticketCredentials,
+      event,
+    );
 
     await this.mailService.sendMail({
-      subject: 'TicketPoint - Your OTP Code',
-      recipients: [{ name: data.attendee ?? '', address: data.email }],
+      subject: 'TicketPoint - Your Ticket Order',
+      recipients: [
+        {
+          name: `${data.firstName} ${data.lastName}`,
+          address: data.email,
+        },
+      ],
       html: `
         <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
           <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
@@ -189,22 +253,25 @@ export class TicketService {
       attachments: [
         {
           path: generatedTicketPath,
-        }
-      ]
+        },
+      ],
     });
 
     await this.prismaService.ticket.update({
       where: {
-        id: bookId
+        id: bookId,
       },
       data: {
         credential: ticketCredentials,
-      }
-    })
+      },
+    });
   }
 
   async validateTicket(bookId: number, request: ValidateTicketRequestDto) {
-    const validatedData = await this.validationService.validate(TicketValidation.VALIDATE, request);
+    const validatedData = await this.validationService.validate(
+      TicketValidation.VALIDATE,
+      request,
+    );
 
     const result = await this.prismaService.ticket.findUnique({
       where: {
@@ -212,15 +279,15 @@ export class TicketService {
         id: bookId,
       },
     });
-    
+
     if (!result) {
       throw new HttpException('Invalid ticket credentials', 400);
     }
-    
+
     if (result.credential !== validatedData.credential) {
       throw new HttpException('Invalid ticket credentials', 400);
     }
-    
+
     await this.prismaService.ticket.update({
       where: {
         id: bookId,
@@ -228,7 +295,102 @@ export class TicketService {
       data: {
         isCheckin: true,
         checkinDate: new Date().toISOString(),
-      }
+      },
     });
+  }
+
+  async getEventValidAttendances(
+    user: UserPayload,
+    eventId: number,
+  ): Promise<AttendancesResponseDto> {
+    const authorizedOwner = await this.prismaService.event.findFirst({
+      where: {
+        ownerId: user.id,
+      },
+      select: {
+        ownerId: true,
+      },
+    });
+
+    if (!authorizedOwner) {
+      throw new HttpException('User not found', 404);
+    }
+
+    if (authorizedOwner.ownerId !== user.id) {
+      throw new UnauthorizedException(
+        'You do not have permission to access this resource',
+      );
+    }
+
+    const data = await this.prismaService.ticket.findMany({
+      where: {
+        tier: {
+          eventId,
+        },
+      },
+      select: {
+        firstName: true,
+        lastName: true,
+        phone: true,
+        email: true,
+        tier: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    return {
+      message: 'success',
+      attendances: data as AttendeeResponseDto[],
+    };
+  }
+
+  async getAttendeeByCredentials(
+    user: UserPayload,
+    credentials: string,
+  ): Promise<AttendeeResponseDto> {
+    const data = await this.prismaService.ticket.findFirst({
+      where: {
+        credential: credentials,
+      },
+      select: {
+        firstName: true,
+        lastName: true,
+        organization: true,
+        position: true,
+        email: true,
+        phone: true,
+        tier: {
+          select: {
+            name: true,
+            event: {
+              select: {
+                ownerId: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!data) {
+      throw new HttpException('Not found data', 404);
+    }
+
+    if (data.tier?.event.ownerId !== user.id) {
+      throw new UnauthorizedException('Cannot access unauthorized resource');
+    }
+
+    return {
+      firstName: data.firstName,
+      lastName: data.lastName,
+      organization: data.organization,
+      position: data.position,
+      email: data.email,
+      phone: data.phone,
+      tier: data.tier ? { name: data.tier.name } : undefined,
+    };
   }
 }
