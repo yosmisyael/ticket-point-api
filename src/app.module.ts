@@ -9,6 +9,7 @@ import { EventModule } from './event/event.module';
 import { TierModule } from './tier/tier.module';
 import { FileModule } from './file/file.module';
 import { TicketModule } from './ticket/ticket.module';
+import { OrganizationModule } from './organization/organization.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TicketModule } from './ticket/ticket.module';
     TierModule,
     FileModule,
     TicketModule,
+    OrganizationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
