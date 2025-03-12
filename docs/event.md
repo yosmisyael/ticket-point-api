@@ -1,78 +1,91 @@
 # Event API Specification
 
-## Create Event
+## Get All Published Events
+Endpoint: (GET) /api/events/search
 
-Request Body:
+## Get Event by Id
+Endpoint: (GET) /api/events/{event_id}
+
+## Search Event
+Endpoint: (GET) /api/events/search?
+
+Query:
+
+- title (string)
+- category (string)
+- organizer (string)
+- location (string)
+- time (option: tomorrow, this weekend)
+
+## Create Event
+Endpoint: (GET) /api/events 
+
+Header:
+- Authorization: Bearer {jwt}
+
+Body:
+- Request Body (Valid):
 ```json
 {
   "event": {
-    "title": "Annual Developer Conference 2025",
-    "description": "Join us for the latest in web development trends and networking opportunities.",
+    "title": "Global AI Summit 2025",
+    "description": "Explore the future of artificial intelligence with leading experts, hands-on workshops, and networking opportunities.",
     "organizer": {
-      "id": "123e4567-e89b-12d3-a456-426614174000",
-      "name": "Tech Innovators Group"
+      "id": "987f6543-e21b-45d6-a789-567812345000",
+      "name": "AI Future Labs"
     },
-    "dateTime": {
-      "type": "range",
-      "startDate": "1999-01-08",
-      "endDate": "1999-01-08",
-      "startTime": "1741297391",
-      "endTime": "1741297391"
-    },
+    "startDate": "2025-09-10",
+    "endDate": "2025-09-12",
+    "startTime": 1757520000,
+    "endTime": 1757692800,
     "format": {
-      "type": "hybrid",
+      "type": "HYBRID",
       "onsite": {
-        "venueName": "Tech Convention Center",
-        "address": {
-          "street": "123 Innovation Blvd",
-          "city": "San Francisco",
-          "state": "CA",
-          "postalCode": "94107",
-          "country": "USA"
-        },
-        "coordinates": {
-          "latitude": 37.7749,
-          "longitude": -122.4194
-        },
-        "mapUrl": "https://maps.example.com/?q=37.7749,-122.4194",
-        "venueNotes": "Enter through the main lobby, registration is on the second floor."
+        "venue": "San Francisco Conference Center",
+        "address": "747 Howard St, San Francisco, CA 94103",
+        "latitude": 37.7849,
+        "longitude": -122.4004,
+        "mapUrl": "https://maps.example.com/?q=37.7849,-122.4004"
       },
       "online": {
-        "platform": "zoom",
-        "platformUrl": "https://zoom.us/j/123456789?pwd=abcdefghijklmn"
+        "platform": "Microsoft Teams",
+        "platformUrl": "https://teams.microsoft.com/l/meetup-join/19%3ameeting_1234567890"
       }
     },
-    "category": "technology",
-    "capacity": {
-      "total": 500,
-      "onsite": 300,
-      "online": 200
-    },
+    "category": "artificial-intelligence",
     "contact": {
-      "email": "events@techinnovators.com",
-      "phone": "+1-555-123-4567",
-      "website": "https://techinnovators.com/events"
+      "email": "info@aifuturelabs.com",
+      "phone": "+16505551234",
+      "website": "https://aifuturelabs.com/summit2025"
     },
-  "coverImage": "https://example.com/images/event-cover.jpg",
     "additionalInfo": {
       "agenda": {
         "items": [
           {
-            "startTime": "2025-04-15T09:00:00Z",
-            "endTime": "2025-04-15T09:00:00Z",
-            "event": "event name"
+            "startTime": 1757523600,
+            "endTime": 1757527200,
+            "title": "Welcome Address"
           },
           {
-            "startTime": "2025-04-15T09:00:00Z",
-            "endTime": "2025-04-15T09:00:00Z",
-            "event": "event name"
+            "startTime": 1757527200,
+            "endTime": 1757534400,
+            "title": "Keynote: The Future of AI in Healthcare"
+          },
+          {
+            "startTime": 1757534400,
+            "endTime": 1757538000,
+            "title": "Workshop: Building Ethical AI Systems"
           }
         ]
       },
       "faq": [
         {
-          "question": "where is the parking lot?",
-          "answer": "something"
+          "question": "Is there a dress code?",
+          "answer": "Business casual is recommended for all attendees."
+        },
+        {
+          "question": "Can I attend both onsite and online?",
+          "answer": "Yes, you can switch between onsite and online participation at any time."
         }
       ]
     }
@@ -80,9 +93,42 @@ Request Body:
 }
 ```
 
-## Create Ticket
-
-Request Body:
+- Response Body (Success):
 ```json
-
+{
+  "data": {
+    "message": "success",
+    "id": 1
+  }
+}
 ```
+
+## Update Event
+Endpoint: (PATCH) /api/events/{event_id}
+
+Header:
+- Authorization: Bearer {jwt}
+
+Body:
+- Request Body (Valid):
+    Example updating event title
+```json
+{
+  "title": "Updated new Title"
+}
+```
+- Response Body (Success):
+```json
+{
+  "data": {
+    "message": "success",
+    "id": 1
+  }
+}
+```
+
+## Delete Event
+Endpoint: (DELETE) /api/events/{event_id}
+
+Header:
+- Authorization: Bearer {jwt}
