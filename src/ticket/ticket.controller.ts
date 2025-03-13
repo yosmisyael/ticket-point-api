@@ -15,7 +15,7 @@ import {
   BookingTicketResponseDto,
   GenerateTicketResponseDto,
   AttendeeResponseDto,
-  ValidateTicketRequestDto, AttendancesResponseDto,
+  ValidateTicketRequestDto, AttendancesResponseDto, PaymentValidationDto,
 } from './dto/ticket.dto';
 import { TicketService } from './ticket.service';
 import { WebResponse } from '../model/web.model';
@@ -25,6 +25,12 @@ import { RequestWithUser } from '../auth/model/request.model';
 @Controller('/api/tickets')
 export class TicketController {
   constructor(private readonly ticketService: TicketService) {}
+
+  @Post('/payment-verification')
+  @HttpCode(HttpStatus.OK)
+  async validatePayment(@Body() payload: PaymentValidationDto) {
+    await this.ticketService.validatePayment(payload);
+  }
 
   @Post('/booking')
   @HttpCode(HttpStatus.CREATED)
@@ -37,19 +43,6 @@ export class TicketController {
         bookingId: result.id,
       }
     };
-  }
-
-  @Post('/booking/:bookingId')
-  @HttpCode(HttpStatus.OK)
-  async generateTicket(@Param('bookingId') bookingId: number): Promise<WebResponse<GenerateTicketResponseDto>> {
-    await this.ticketService.sendConfirmation(Number(bookingId));
-    
-    return {
-      data: {
-        message: 'success',
-        bookingId: Number(bookingId)
-      }
-    }
   }
 
   @Patch('/booking/:bookingId')
@@ -69,6 +62,7 @@ export class TicketController {
       }
     }
   }
+
 
   @Get('/:ticketId')
   @HttpCode(HttpStatus.OK)

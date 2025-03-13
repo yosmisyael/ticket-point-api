@@ -1,5 +1,3 @@
-import { Ticket } from '@prisma/client';
-
 export class BookingTicketRequestDto {
   email: string;
   firstName: string;
@@ -8,6 +6,7 @@ export class BookingTicketRequestDto {
   position: string;
   phone: string;
   tierId: number;
+  orderId: string;
 }
 
 export class BookingTicketResponseDto {
@@ -41,4 +40,14 @@ export class AttendeeResponseDto {
 export class AttendancesResponseDto {
   message: string;
   attendances: AttendeeResponseDto[];
+}
+
+
+export class PaymentValidationDto {
+  order_id: string;
+  payment_type: string;
+  transaction_type: string;
+  transaction_time: Date;
+  transaction_status: string;
+  fraud_status: string;
 }

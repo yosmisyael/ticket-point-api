@@ -9,7 +9,7 @@ import {
   AttendeeResponseDto,
   AttendancesResponseDto,
   BookingTicketRequestDto,
-  ValidateTicketRequestDto,
+  ValidateTicketRequestDto, PaymentValidationDto,
 } from './dto/ticket.dto';
 import { v4 as uuid } from 'uuid';
 import * as QRCode from 'qrcode';
@@ -30,7 +30,7 @@ export class TicketService {
   ) {}
 
   async bookTicket(request: BookingTicketRequestDto): Promise<{ id: number }> {
-    const validated = await this.validationService.validate(
+    const validated: BookingTicketRequestDto = await this.validationService.validate(
       TicketValidation.BOOKING,
       request,
     );
@@ -44,6 +44,7 @@ export class TicketService {
         organization: validated.organization,
         position: validated.position,
         tierId: validated.tierId,
+        orderId: validated.orderId,
       },
       select: {
         id: true,
@@ -190,13 +191,7 @@ export class TicketService {
       throw new HttpException('Booking data is invalid', HttpStatus.NOT_FOUND);
     }
 
-    const isBilling = true;
-
-    if (!isBilling) {
-      throw new HttpException('User has not made ticket payment', 400);
-    }
-
-    const ticketCredentials: string = uuid();
+    const ticketCredentials: string = data.credential as string;
 
     const event = await this.prismaService.event.findFirst({
       where: {
@@ -256,15 +251,6 @@ export class TicketService {
         },
       ],
     });
-
-    await this.prismaService.ticket.update({
-      where: {
-        id: bookingId,
-      },
-      data: {
-        credential: ticketCredentials,
-      },
-    });
   }
 
   async validateTicket(user: UserPayload, bookingId: number, request: ValidateTicketRequestDto) {
@@ -278,10 +264,26 @@ export class TicketService {
         credential: validatedData.credential,
         id: bookingId,
       },
+      select: {
+        credential: true,
+        tier: {
+          select: {
+            event: {
+              select: {
+                ownerId: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!result) {
       throw new HttpException('Invalid ticket credentials', 400);
+    }
+
+    if (user.id !== result.tier?.event.ownerId) {
+      throw new HttpException("Credential doesn't match", 400);
     }
 
     if (result.credential !== validatedData.credential) {
@@ -392,5 +394,37 @@ export class TicketService {
       phone: data.phone,
       tier: data.tier ? { name: data.tier.name } : undefined,
     };
+  }
+
+  async validatePayment(request: PaymentValidationDto) {
+    const validated: PaymentValidationDto = await this.validationService.validate(TicketValidation.PAYMENT_VALIDATION, request);
+
+    if (validated.fraud_status !== 'accept') {
+      throw new HttpException('Payment validation failed', 400);
+    }
+
+    if ((validated.transaction_status !== 'settlement') && (validated.transaction_status !== 'capture')) {
+      throw new HttpException('Payment validation failed', 400);
+    }
+
+    const credential: string = uuid();
+
+    const result = await this.prismaService.ticket.update({
+      where: {
+        orderId: validated.order_id as string,
+      },
+      data: {
+        transactionType: validated.transaction_type,
+        transactionStatus: true,
+        transactionTime: validated.transaction_time,
+        fraudStatus: validated.fraud_status,
+        credential,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    await this.sendConfirmation(result.id);
   }
 }
