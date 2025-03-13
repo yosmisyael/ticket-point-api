@@ -13,7 +13,7 @@ import { ErrorFilter } from './error.filter';
     WinstonModule.forRoot({
       format: winston.format.json(),
       transports: [
-        new winston.transports.Console(),
+        new winston.transports.Console({format: winston.format.cli()}),
         new winston.transports.File({ filename: '../../logs/error.log', level: 'error' }),
       ],
     }),
