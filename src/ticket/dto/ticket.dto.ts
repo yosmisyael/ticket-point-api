@@ -31,6 +31,7 @@ export class AttendeeResponseDto {
   email: string;
   phone: string;
   isCheckin?: boolean;
+  transactionTime?: Date;
   checkinDate?: Date;
   tier?: {
     name: string;

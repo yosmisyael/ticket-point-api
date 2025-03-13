@@ -130,6 +130,31 @@ export class EventService {
     return result;
   }
 
+  async getEventByOwnerId(id: number): Promise<Event[]> {
+    const result = await this.prismaService.event.findMany({
+      where: {
+        ownerId: id
+      },
+      include: {
+        location: true,
+        categories: {
+          select: {
+            name: true,
+            id: true,
+          },
+        },
+        faqs: true,
+        agendas: true,
+      }
+    });
+
+    if (!result) {
+      throw new HttpException('Event not found', 404);
+    }
+
+    return result;
+  }
+
   getDateRange(timeFilter: string) {
     const today = new Date();
     const tomorrow = new Date(today);
@@ -196,8 +221,8 @@ export class EventService {
         }),
         ...(dateRange && {
           startDate: {
-            gte: dateRange.start, // Greater than or equal to the start of the range
-            lte: dateRange.end, // Less than or equal to the end of the range
+            gte: dateRange.start,
+            lte: dateRange.end,
           },
         }),
       },
@@ -220,6 +245,7 @@ export class EventService {
 
     return result;
   }
+
 
   async validateEvent(id: number): Promise<Boolean> {
     const result = await this.prismaService.event.findFirst({

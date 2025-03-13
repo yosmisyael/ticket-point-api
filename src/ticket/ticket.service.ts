@@ -329,12 +329,15 @@ export class TicketService {
         tier: {
           eventId,
         },
+        transactionStatus: true,
       },
       select: {
         firstName: true,
         lastName: true,
         phone: true,
         email: true,
+        transactionTime: true,
+        checkinDate: true,
         tier: {
           select: {
             name: true,
