@@ -63,10 +63,11 @@ export class EventController {
 
   @Get('/owner/:ownerId')
   @HttpCode(HttpStatus.OK)
-  async getEventByOwner(@Param('id') id: number) {
+  async getEventByOwner(@Param('ownerId') id: number) {
     const result = await this.eventService.getEventByOwnerId(Number(id));
 
     return {
+      message: 'success',
       data: result,
     };
   }
