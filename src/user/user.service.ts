@@ -16,6 +16,7 @@ import {
   RegisterUserDto,
   UserResponseDto, UpdateUserDto, RequestOTPDto,
 } from './dto/user.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UserService {
@@ -24,6 +25,7 @@ export class UserService {
     private verificationService: VerificationService,
     private prismaService: PrismaService,
     private mailService: MailService,
+    private configService: ConfigService,
   ) {}
 
   async verifyUniqueEmail(email: string, userId?: number): Promise<boolean> {
@@ -189,6 +191,10 @@ export class UserService {
       },
     });
 
+    const frontendBaseUrl = this.configService.get<string>('APP_FRONTEND');
+
+    const dashboardUrl = `${frontendBaseUrl}/dashboard/home`;
+
     await this.mailService.sendMail({
       subject: 'TicketPoint - Welcome to TicketPoint',
       recipients: [{ name: user.name ?? '', address: user.email }],
@@ -207,7 +213,7 @@ export class UserService {
                 <p style="font-size: 16px; color: #333333;">Thank you for validating your account. You're all set to explore TicketPoint and enjoy seamless ticket management.</p>
                 
                 <!-- Button Linking to Your App -->
-                <a href="" style="display: inline-block; margin: 20px 0; padding: 12px 24px; font-size: 16px; font-weight: bold; color: #ffffff; background-color: #FFC400; text-decoration: none; border-radius: 8px;">
+                <a href='${dashboardUrl}' style="display: inline-block; margin: 20px 0; padding: 12px 24px; font-size: 16px; font-weight: bold; color: #ffffff; background-color: #FFC400; text-decoration: none; border-radius: 8px;">
                   Go to TicketPoint
                 </a>
           
@@ -275,7 +281,7 @@ export class UserService {
     });
 
     if (result.count == 0) {
-      throw new HttpException('An error occured wwhen trying to logout', 500);
+      throw new HttpException('An error occurred when trying to logout', 500);
     }
 
     return true;
