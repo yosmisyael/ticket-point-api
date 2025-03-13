@@ -10,7 +10,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL_DEV")
 }
 
 enum VerificationType {
@@ -189,22 +189,25 @@ model TierBenefit {
 }
 
 model Ticket {
-  id              Int       @id @default(autoincrement())
-  credential      String?   @unique()
-  firstName       String    @map("first_name")
-  lastName        String    @map("last_name")
-  email           String
-  phone           String
-  position        String
-  organization    String    @map("organization_name")
-  paymentStat     Boolean   @default(false)
-  paymentMethod   String?
-  isCheckin       Boolean   @default(false) @map("is_check_in")
-  checkinDate     DateTime? @map("check_in_date")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @default(now()) @map("updated_at")
-  tierId          Int?      @map("tier_id")
-  tier            Tier?     @relation(fields: [tierId], references: [id], onDelete: Cascade)
+  id                  Int       @id @default(autoincrement())
+  credential          String?   @unique()
+  firstName           String    @map("first_name")
+  lastName            String    @map("last_name")
+  email               String
+  phone               String
+  position            String
+  orderId             String?   @unique() @map("order_id")
+  organization        String    @map("organization_name")
+  transactionStatus   Boolean   @default(false) @map("transaction_status")
+  transactionType     String?   @map("transaction_type")
+  transactionTime     DateTime? @map("transaction_time")
+  fraudStatus         String?   @map("fraud_status")
+  isCheckin           Boolean   @default(false) @map("is_check_in")
+  checkinDate         DateTime? @map("check_in_date")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @default(now()) @map("updated_at")
+  tierId              Int?      @map("tier_id")
+  tier                Tier?     @relation(fields: [tierId], references: [id], onDelete: Cascade)
 
   @@map("tickets")
 }
