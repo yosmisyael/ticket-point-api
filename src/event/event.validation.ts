@@ -16,15 +16,15 @@ const fileValidator = () => {
 const formatRules = z.object({
   type: z.enum(['ONLINE', 'ONSITE', 'HYBRID']),
   onsite: z.object({
-    venue: z.string().min(1).max(100),
-    address: z.string().min(1),
-    latitude: z.number().min(-90).max(90),
-    longitude: z.number().min(-180).max(180),
-    mapUrl: z.string().url().optional(),
+    venue: z.string().min(0).max(100).optional(),
+    address: z.string().min(0).optional(),
+    latitude: z.number().min(-90).max(90).optional(),
+    longitude: z.number().min(-180).max(180).optional(),
+    mapUrl: z.string().optional(),
   }).optional(),
   online: z.object({
-    platform: z.string().min(1).max(50),
-    platformUrl: z.string().url()
+    platform: z.string().min(0).max(50).optional(),
+    platformUrl: z.string().optional()
   }).optional()
 });
 
@@ -47,21 +47,12 @@ export class EventValidation {
       event: z.object({
         title: z.string().min(1).max(255),
         description: z.string().min(1),
-        organizer: z.object({
-          id: z.string().uuid(),
-          name: z.string().min(1).max(100)
-        }),
         startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
         endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
         startTime: z.number(),
         endTime: z.number(),
         format: formatRules,
-        category: z.string().min(1).max(50),
-        contact: z.object({
-          email: z.string().email(),
-          phone: z.string().optional(),
-          website: z.string().url().optional()
-        }),
+        category: z.string().max(50).optional(),
         coverImage: z.string().url().optional(),
         additionalInfo: additionalInfoRules,
       })
@@ -71,22 +62,13 @@ export class EventValidation {
       event: z.object({
         title: z.string().min(1).max(255).optional(),
         description: z.string().min(1).optional(),
-        organizer: z.object({
-          id: z.string().uuid(),
-          name: z.string().min(1).max(100)
-        }).optional(),
         isPublished: z.boolean().optional(),
         startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
         endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
         startTime: z.number().optional(),
         endTime: z.number().optional(),
         format: formatRules.optional(),
-        category: z.string().min(1).max(50).optional(),
-        contact: z.object({
-          email: z.string().email(),
-          phone: z.string().optional(),
-          website: z.string().url().optional()
-        }).optional(),
+        category: z.string().max(50).optional(),
         coverImage: z.string().url().optional(),
         additionalInfo: additionalInfoRules,
       })

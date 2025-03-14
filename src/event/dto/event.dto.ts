@@ -2,10 +2,6 @@ export class CreateEventRequestDto {
   event: {
     title: string;
     description: string;
-    organizer: {
-      id: string;
-      name: string;
-    };
     startDate: string;
     endDate: string;
     startTime: string;
@@ -29,11 +25,6 @@ export class CreateEventRequestDto {
       total: number;
       onsite?: number;
       online?: number;
-    };
-    contact: {
-      email: string;
-      phone?: string;
-      website?: string;
     };
     coverImage: string;
     additionalInfo?: {
