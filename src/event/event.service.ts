@@ -118,6 +118,11 @@ export class EventService {
             id: true,
           },
         },
+        tiers: {
+          select: {
+            tierBenefits: true,
+          }
+        },
         faqs: true,
         agendas: true,
       }

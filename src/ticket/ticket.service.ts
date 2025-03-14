@@ -341,6 +341,16 @@ export class TicketService {
         tier: {
           select: {
             name: true,
+            event: {
+              select: {
+                title: true,
+                startDate: true,
+                startTime: true,
+                endTime: true,
+                endDate: true,
+                description: true,
+              }
+            }
           },
         },
       },

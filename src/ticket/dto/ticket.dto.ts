@@ -35,6 +35,15 @@ export class AttendeeResponseDto {
   checkinDate?: Date;
   tier?: {
     name: string;
+    event?: {
+      title: string,
+      startDate: Date,
+      startTime: number,
+      endTime: number,
+      endDate: Date,
+      description: string,
+    }
+
   };
 }
 

@@ -74,6 +74,7 @@ export class EventController {
 
   @Get('/:id')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard)
   async getEvent(@Param('id') id: number) {
     const result = await this.eventService.getEventById(Number(id));
 

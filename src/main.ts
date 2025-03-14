@@ -11,7 +11,10 @@ async function bootstrap() {
 
   app.useLogger(logger);
 
-  app.enableCors();
+  app.enableCors({
+    origin: '*',
+  });
+
 
   app.useStaticAssets(join(__dirname, '..', 'public'));
 
