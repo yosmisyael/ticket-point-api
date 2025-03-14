@@ -160,6 +160,58 @@ export class EventService {
     return result;
   }
 
+  async eventOwnerQuery(
+    ownerId: number,
+    title?: string,
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<Event[]> {
+    // Build where conditions
+    const whereConditions: any = {
+      ownerId: ownerId
+    };
+
+    if (title) {
+      whereConditions.title = {
+        contains: title,
+        mode: 'insensitive'
+      };
+    }
+
+    if (startDate || endDate) {
+      whereConditions.date = {};
+
+      if (startDate) {
+        whereConditions.date.gte = startDate;
+      }
+
+      if (endDate) {
+        whereConditions.date.lte = endDate;
+      }
+    }
+
+    const result = await this.prismaService.event.findMany({
+      where: whereConditions,
+      include: {
+        location: true,
+        categories: {
+          select: {
+            name: true,
+            id: true,
+          },
+        },
+        faqs: true,
+        agendas: true,
+      }
+    });
+
+    if (!result || result.length === 0) {
+      throw new HttpException('No events found with given criteria', 404);
+    }
+
+    return result;
+  }
+
   getDateRange(timeFilter: string) {
     const today = new Date();
     const tomorrow = new Date(today);

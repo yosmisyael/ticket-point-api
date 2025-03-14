@@ -60,6 +60,30 @@ export class EventController {
     };
   }
 
+  @Get('/owner/query/:ownerId')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard)
+  async queryEventsByOwner(
+    @Param('ownerId') ownerId: number,
+    @Query('title') title?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string
+  ) {
+    const parsedStartDate = startDate ? new Date(startDate) : undefined;
+    const parsedEndDate = endDate ? new Date(endDate) : undefined;
+
+    const result = await this.eventService.eventOwnerQuery(
+      Number(ownerId),
+      title,
+      parsedStartDate,
+      parsedEndDate
+    );
+
+    return {
+      message: 'success',
+      data: result,
+    };
+  }
 
   @Get('/owner/:ownerId')
   @HttpCode(HttpStatus.OK)

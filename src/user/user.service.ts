@@ -111,6 +111,9 @@ export class UserService {
       where: {
         id: userId,
       },
+      include: {
+        organization: true,
+      },
     });
 
     if (!result) {
@@ -121,11 +124,13 @@ export class UserService {
       id: result.id,
       name: result.name,
       email: result.email,
+      profileUrl: result?.profileUrl,
+      organization: result.organization?.name,
     };
   }
 
-  async validateOTPRequest({ email, password }: RequestOTPDto): Promise<void> {
-    await this.validationService.validate(UserValidation.REQUEST_OTP, { email, password });
+  async validateOTPRequest({ email }: RequestOTPDto): Promise<void> {
+    await this.validationService.validate(UserValidation.REQUEST_OTP, { email });
 
     const user = await this.prismaService.user.findUnique({
       where: {
@@ -134,12 +139,6 @@ export class UserService {
     });
 
     if (!user) {
-      throw new HttpException('Email or password is wrong', 400);
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
       throw new HttpException('Email or password is wrong', 400);
     }
 

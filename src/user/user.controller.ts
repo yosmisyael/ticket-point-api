@@ -1,30 +1,40 @@
 import {
   Body,
   Controller,
-  HttpCode,
-  Post,
-  UseGuards,
-  Req,
   Delete,
-  Patch,
+  Get,
+  HttpCode,
   HttpStatus,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { WebResponse } from '../model/web.model';
 import {
   MailVerificationRequestDto,
   MailVerificationResponseDto,
-  RegisterUserDto, RequestOTPDto,
+  RegisterUserDto,
+  RequestOTPDto,
   UserResponseDto,
 } from './dto/user.dto';
 import { LocalGuard } from '../auth/guards/local.guard';
 import { Request } from 'express';
 import { JwtGuard } from '../auth/guards/jwt.guard';
 import { User } from '@prisma/client';
+import { RequestWithUser } from '../auth/model/request.model';
 
 @Controller('/api/users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
+  @Get('/current')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtGuard)
+  async getCurrentUser(@Req() req: RequestWithUser) {
+    return await this.userService.getUserById(req.user.id);
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -47,9 +57,9 @@ export class UserController {
 
     return {
       data: {
-        message: 'success'
+        message: 'success',
       },
-    }
+    };
   }
 
   @Post('/verify-email')
@@ -61,7 +71,7 @@ export class UserController {
 
     return {
       data: result,
-    }
+    };
   }
 
   @Post('/login')
@@ -79,11 +89,11 @@ export class UserController {
   async update(@Req() req: Request): Promise<WebResponse<UserResponseDto>> {
     const { id } = req.user as User;
 
-    const result: UserResponseDto = await this.userService.update(id, req.body)
+    const result: UserResponseDto = await this.userService.update(id, req.body);
 
     return {
       data: result,
-    }
+    };
   }
 
   @Delete('/logout')
@@ -97,7 +107,7 @@ export class UserController {
     return {
       data: {
         message: 'Logged out successfully',
-      }
+      },
     };
   }
 }

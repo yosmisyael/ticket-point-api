@@ -32,13 +32,17 @@ export class FileService {
 
     const path2File = path.join(uploadDir, filename);
 
+    if (path2File.startsWith("public/")) {
+      console.log();
+    }
+
     await this.deleteExistingFile(data);
 
     fs.renameSync(file.path, path2File);
 
     return {
       filename: file.filename,
-      path: path2File,
+      path: path2File.startsWith("public/") ? path2File.replace("public/", "") : path2File,
       size: file.size,
       mimetype: file.mimetype,
     };

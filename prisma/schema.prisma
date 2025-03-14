@@ -42,6 +42,7 @@ model User {
   id             Int            @id @default(autoincrement())
   email          String         @unique
   name           String
+  phone          String?
   password       String
   profileUrl     String?
   verifiedAt     DateTime?      @map("verified_at")

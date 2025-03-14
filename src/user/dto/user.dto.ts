@@ -9,6 +9,8 @@ export class UserResponseDto {
   email: string;
   name: string;
   token?: string;
+  profileUrl?: string | null;
+  organization?: string;
   message?: string;
 }
 
@@ -16,6 +18,7 @@ export class UpdateUserDto {
   email?: string;
   password?: string;
   name?: string;
+  phone?: string;
   organizationId?: number;
   profileUrl?: string;
 }
@@ -31,5 +34,4 @@ export class MailVerificationResponseDto {
 
 export class RequestOTPDto {
   email: string;
-  password: string;
 }

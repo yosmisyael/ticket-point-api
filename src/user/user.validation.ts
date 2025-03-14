@@ -31,6 +31,7 @@ export class UserValidation {
   static readonly UPDATE: ZodType = z.object({
     name: z.string().min(1).max(255).optional(),
     email: z.string().min(1).max(255).email().optional(),
+    phone: z.string().optional(),
     password: passwordSchema,
     organizationId: z.string().min(1).optional(),
     profileUrl: z.string().url().optional()
@@ -38,6 +39,5 @@ export class UserValidation {
 
   static readonly REQUEST_OTP: ZodType = z.object({
     email: z.string().email(),
-    password: z.string().min(1),
   });
 }
