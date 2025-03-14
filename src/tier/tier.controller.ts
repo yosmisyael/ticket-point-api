@@ -41,9 +41,9 @@ export class TierController {
   async createTier(
     @Req() { user }: RequestWithUser,
     @Param('eventId') eventId: number,
-    @Body() payload: CreateTierRequestDto
-  ): Promise<WebResponse<TierResponseDto>> {
-    const result = await this.tierService.createTier(user, Number(eventId), payload);
+    @Body() payload: CreateTierRequestDto[]
+  ): Promise<WebResponse<TierResponseDto[]>> {
+    const result = await this.tierService.createTiers(user, Number(eventId), payload);
     
     return {
       data: result,

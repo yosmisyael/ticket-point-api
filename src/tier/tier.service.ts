@@ -113,13 +113,88 @@ export class TierService {
     };
   }
 
+  async createTiers(
+    user: UserPayload,
+    eventId: number,
+    requests: CreateTierRequestDto[], // Accept an array of CreateTierRequestDto
+  ): Promise<TierResponseDto[]> {
+    // Validate user authorization for the event
+    await this.validateTierAuthorization(user.id, eventId);
+
+    // Validate each request in the array
+    const validatedData: CreateTierRequestDto[] = await Promise.all(
+      requests.map(async (request) => {
+        return this.validationService.validate(TierValidation.CREATE, request);
+      }),
+    );
+
+    // Check for uniqueness of tier names and formats
+    await Promise.all(
+      validatedData.map(async (data) => {
+        await this.validateTierUnique(data.name, data.format as Format);
+      }),
+    );
+
+    // Prepare data for Prisma createMany
+    const prepData: Prisma.TierCreateManyInput[] = validatedData.map((data) => {
+      return {
+        name: data.name,
+        price: data.price as number,
+        currency: data.currency,
+        capacity: data.capacity,
+        remains: data.capacity, // Set remains equal to capacity initially
+        icon: data.icon,
+        iconColor: data.iconColor,
+        format: data.format as Format,
+        eventId: eventId, // Connect to the event
+      };
+    });
+
+    // Use Prisma's createMany to insert multiple tiers
+    const result = await this.prismaService.tier.createMany({
+      data: prepData,
+    });
+
+    // Fetch the IDs of the created tiers
+    const createdTiers = await this.prismaService.tier.findMany({
+      where: {
+        eventId: eventId,
+        name: {
+          in: validatedData.map((data) => data.name),
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    // Create tier benefits for each created tier
+    await Promise.all(
+      validatedData.map(async (data, index) => {
+        const tierId = createdTiers[index].id;
+        await this.prismaService.tierBenefit.createMany({
+          data: data.benefits.map((benefit: string) => ({
+            description: benefit,
+            tierId: tierId,
+          })),
+        });
+      }),
+    );
+
+    // Return the response for each created tier
+    return createdTiers.map((tier) => ({
+      id: tier.id,
+      message: 'success',
+    }));
+  }
+
   async updateTier(
     user: UserPayload,
     eventId: number,
     tierId: number,
     request: UpdateTierRequestDto,
   ): Promise<TierResponseDto> {
-    await this.validateTierExists(tierId);
+    await this.validateTierExists(Number(tierId));
 
     await this.validateTierAuthorization(user.id, eventId);
 
@@ -227,7 +302,7 @@ export class TierService {
   }
 
   async deleteTier(user: UserPayload, eventId: number, tierId: number): Promise<TierResponseDto> {
-    await this.validateTierExists(tierId);
+    await this.validateTierExists(Number(tierId));
 
     await this.validateTierAuthorization(user.id, eventId);
 
